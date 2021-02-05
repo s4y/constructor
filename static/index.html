@@ -283,6 +283,7 @@ let doLoad = () => {
 doLoad();
 
 let fade = 1;
+let lastError = null;
 const draw = () => {
   canvas.draw(gl => {
     if (pendingProgram && pendingProgram.checkReady()) {
@@ -307,7 +308,10 @@ const draw = () => {
     if (activeProgram && activeProgram.checkReady())
       activeProgram.draw();
       let err = (pendingProgram && pendingProgram.error) || (activeProgram && activeProgram.error);
-      showError(err);
+      if (err != lastError) {
+        showError(err);
+        lastError = err;
+      }
   });
   requestAnimationFrame(draw);
 };
