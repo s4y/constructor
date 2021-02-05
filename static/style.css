@@ -1,0 +1,63 @@
+body {
+  background: black;
+  color: white;
+  margin: 0;
+  font: 16px system-ui, sans-serif;
+}
+
+#outputEl {
+  width: 100vw;
+  height: 100vh;
+  display: block;
+}
+
+#controls {
+  position: absolute;
+  top: 0;
+  right: 0;
+  padding: 0.5em;
+}
+
+#errorZone {
+  position: absolute;
+  bottom: 0;
+  background: rgba(255, 0, 0, 0.5);
+  font-family: monospace;
+  left: 0;
+  right: 0;
+}
+
+#errorZone:not(.visible) {
+  display: none;
+}
+
+#errorSummary {
+  white-space: pre-wrap;
+  margin: 0.5em;
+}
+
+#errorSource {
+  white-space: pre-wrap;
+  overflow: auto;
+  max-height: 40vh;
+  counter-reset: line;
+}
+
+#errorSource > div {
+  display: flex;
+}
+
+#errorSource > div::before {
+  counter-increment: line;
+  content: counter(line);
+  width: 2em;
+  background: rgba(255, 255, 255, 0.2);
+  display: block;
+  text-align: right;
+  padding-right: 0.25em;
+  margin-right: 0.25em;
+}
+
+#errorSource > div.interesting {
+  background: rgba(255, 255, 255, 0.2);
+}

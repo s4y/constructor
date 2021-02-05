@@ -1,0 +1,3 @@
+[submodule "static/shaders/t420babe"]
+	path = static/shaders/t420babe
+	url = https://github.com/t420babe/demo-core
