@@ -8,11 +8,17 @@
 </div>
 <script type=module>
 
+import S4r from './lib/S4r.js'
+
 class Canvas {
   constructor(canvasEl, initFn) {
     this.canvasEl = canvasEl;
     this.initFn = initFn;
-    this.gl = canvasEl.getContext('webgl', { alpha: false, powerPreference: 'high-performance' });
+    this.gl = canvasEl.getContext('webgl', {
+      alpha: false,
+      antialias: false,
+      powerPreference: 'high-performance'
+    });
     this.props = {};
     this.programs = [];
     this.reinit();
@@ -139,13 +145,23 @@ class ShaderProgram {
     this.uniformSetters = [];
     for (const k in this.uniforms) {
       const loc = gl.getUniformLocation(program, k);
+      if (!loc) {
+        console.info('missing or unused uniform', k);
+        continue;
+      }
       let lastVal;
       this.uniformSetters.push(() => {
         let val = this.uniforms[k];
         if (typeof val == 'function')
           val = val();
+        if (val instanceof WebGLTexture) {
+          gl.activeTexture(gl.TEXTURE0);
+          gl.bindTexture(gl.TEXTURE_2D, val);
+          gl.uniform1i(loc, 0);
+          return;
+        }
         if (val == lastVal)
-          return
+          return;
         if (!Array.isArray(val))
           val = [val];
         lastVal = val;
@@ -196,6 +212,9 @@ class ShaderProgram {
 const canvas = new Canvas(outputEl);
 window.addEventListener('resize', () => canvas.resize());
 canvas.resize();
+document.body.onload = () => {
+  canvas.resize();
+};
 
 canvas.gl.getExtension('OES_standard_derivatives');
 canvas.gl.enable(canvas.gl.BLEND);
@@ -237,16 +256,59 @@ const makeFilteredSampler = (type, freq) => {
   return {
     get() {
       analyser.getByteTimeDomainData(buf);
-      const ret = buf.reduce((acc, x) => Math.abs(x-128)) / 128;
-      decayVal = Math.min(1, decayVal * 0.7 + ret);
+      const ret = Math.pow(buf.reduce((acc, x) => Math.abs(x-128)) / 128, 2);
+      decayVal = Math.min(1, decayVal * 0.2 + ret);
       return decayVal;
     }
   };
 }
 
-const ac = new AudioContext();
+const ac = new (window.AudioContext || window.webkitAudioContext)();
 const mixer = ac.createGain();
-const lowPass = makeFilteredSampler('lowpass', 1000);
+const kMaxFrequency = 15000;
+const fft = (() => {
+  const { gl } = canvas;
+  const analyser = ac.createAnalyser();
+  analyser.fftSize = 2048;
+  analyser.smoothingTimeConstant = 0.1;
+  mixer.connect(analyser);
+  const buf = new Uint8Array(Math.pow(2, Math.ceil(Math.log2(Math.floor(kMaxFrequency / ac.sampleRate * (analyser.fftSize / 2))))));
+  let lastUpdate = null;
+
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  const ensureCurrent = () => {
+    const now = Date.now();
+    if (lastUpdate == now)
+      return;
+    lastUpdate = now;
+    analyser.getByteFrequencyData(buf);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.LUMINANCE,
+      buf.length, 1, 0,
+      gl.LUMINANCE, gl.UNSIGNED_BYTE, buf
+    );
+  };
+
+  return {
+    analyser,
+    get tex() {
+      ensureCurrent();
+      return tex;
+    },
+    get buf() {
+      ensureCurrent();
+      return buf;
+    },
+  }
+})();
+const lowPass = makeFilteredSampler('lowpass', 80);
 const highPass = makeFilteredSampler('highpass', 2000);
 const bandPass = makeFilteredSampler('bandpass', 500);
 
@@ -267,16 +329,29 @@ const uniforms = {
   'u_audio.highpass': () => highPass.get(),
   'u_audio.bandpass': () => bandPass.get(),
   'u_audio.notch': () => bandPass.get(),
+  'u_freq': () => fft.tex,
 };
 
 let activeProgram;
 let pendingProgram;
 
+const s4rShader = new S4r(canvas.gl, [
+  'shaders/s4y/common.s4r',
+  'shaders/s4y/vortex.s4r',
+], {
+  get freqTex() {
+    return fft.tex;
+  },
+  get t() {
+    return (Date.now()/1000) % (1 << 15) - (1 << 14);
+  },
+});
+
 let doLoad = () => {
   pendingProgram = new ShaderProgram(
     canvas.gl,
     '/shaders/default.vert',
-    '/shaders/hello/hello.frag');
+    '/shaders/s4y/01.frag');
   pendingProgram.uniforms = uniforms;
 };
 
@@ -286,6 +361,9 @@ let fade = 1;
 let lastError = null;
 const draw = () => {
   canvas.draw(gl => {
+    if (s4rShader.ready)
+      s4rShader.draw();
+    return;
     if (pendingProgram && pendingProgram.checkReady()) {
       if (fade) {
         gl.blendFunc(gl.ONE, gl.ONE);
@@ -303,7 +381,7 @@ const draw = () => {
         gl.blendColor(1, 1, 1, 1-fade);
         gl.blendFunc(gl.ONE_MINUS_CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
     } else {
-        gl.blendFunc(gl.ONE, gl.ONE);
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
     if (activeProgram && activeProgram.checkReady())
       activeProgram.draw();
@@ -324,6 +402,7 @@ window.addEventListener('sourcechange', e => {
     e.preventDefault();
 
   let prog = activeProgram || pendingProgram;
+  return;
   if (prog.vs.interestedPaths.has(changedPath) || prog.fs.interestedPaths.has(changedPath))
     doLoad();
     

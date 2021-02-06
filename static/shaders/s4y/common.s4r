@@ -1,0 +1,127 @@
+:fn sin 1
+:fn cos 1
+:fn acos 1
+:fn sqrt 1
+:fn exp 1
+:fn tan 1
+:fn sign 1
+:fn vec2.1 1 vec2
+:fn vec2 2 vec2
+:fn vec3 3 vec3
+:fn vec3.1 1 vec3
+:fn vec3.2 2 vec3
+:fn vec4.1 1 vec4
+:fn vec4.2 2 vec4
+:fn vec4.3 3 vec4
+:fn vec4 4 vec4
+:fn atan 2
+:fn pow 2
+:fn distance 2 float
+:fn clamp 3
+:fn mod 2
+:fn abs 1
+:fn min 2
+:fn max 2
+:fn mix 3
+:fn step 2
+:fn mat2 4 mat2
+:fn mat3 9 mat3
+:fn mat4 16 mat4
+:fn length 1 float
+:fn texture2D 2 vec4
+:fn rgb2hsv 1
+:fn hsv2rgb 1
+:fn normalize 1
+
+1 0 0 0
+0 1 0 0
+0 0 1 0
+0 0 0 1
+mat4 =kIdentity
+
+
+:def rotX
+ { =angle
+  1 0 0 0
+  0 angle cos angle sin -1 * 0
+  0 angle sin angle cos 0
+  0 0 0 1
+ } mat4
+
+:def rotY
+ { =angle
+  angle cos 0 angle sin 0
+  0 1 0 0
+  angle sin -1 * 0 angle cos 0
+  0 0 0 1
+ } mat4
+
+:def rotYt
+ { =angle
+  angle cos 0 angle sin -1 * 0
+  0 1 0 0
+  angle sin 0 angle cos 0
+  0 0 0 1
+ } mat4
+
+:def rotZ
+ { =angle
+  angle cos angle sin -1 * 0 0
+  angle sin angle cos 0 0
+  0 0 1 0
+  0 0 0 1
+ } mat4
+
+:def perspectiveProj
+ { =far =near =aspect =fov
+  1 fov 2 / tan / =f
+  f aspect / 0 0 0
+  0 f 0 0
+  0 0 far near + far near - / 1
+  0 0 2 far * near * near far - / 0
+ } mat4
+
+:def transform swap 1 vec4.2 swap * dup .xyz swap .w /
+:def unbal 2. / .5 +
+:def bal 2. * 1 -
+:def cmod { =by by 2 / + by mod by 2 / - }
+:def uv p .xy unbal
+:def angle p .x p .y atan
+:def cdist 0 vec2.1 p .xy distance
+:def polar cdist 2 PI angle / / vec2
+:def fitp p aspect 1 1 vec3 * =p
+:def dup { =x x x }
+:def swap { =x =y x y }
+:def inv 1 swap -
+:def tex texture2D
+:def blend { =b =a a b a .a inv * + }
+:def addHsv { =delta =c c .rgb rgb2hsv delta + hsv2rgb c .a vec4.2 }
+:def hsv vec3 hsv2rgb 1 vec4.2
+
+:def smin { =k =b =a
+ 0.5 0.5 b a - * k / + 0 1 clamp =h
+ b a h mix k h 1 h - * * -
+ }
+
+:def sdSphere { =size =p
+ p length size -
+ }
+
+:def sdBox { =b =p
+ p abs b - =q
+ q 0 max length
+ q .x q .y q .z max max 0 min
+ +
+ }
+
+:def estimateNormal {
+ =p
+ 1 512 / =epsilon
+ p .x epsilon + p .y p .z vec3 sd
+ p .x epsilon - p .y p .z vec3 sd -
+ p .x p .y epsilon + p .z vec3 sd
+ p .x p .y epsilon - p .z vec3 sd -
+ p .x p .y p .z epsilon + vec3 sd
+ p .x p .y p .z epsilon - vec3 sd -
+ vec3 normalize
+ }
