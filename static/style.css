@@ -20,14 +20,18 @@ body.program:fullscreen {
 }
 
 #controls {
-  position: absolute;
-  top: 0;
+  position: fixed;
+  bottom: 0;
   right: 0;
   padding: 0.5em;
 }
 
+body.program #controls {
+  display: none;
+}
+
 #errorZone {
-  position: absolute;
+  position: fixed;
   bottom: 0;
   background: rgba(255, 0, 0, 0.5);
   font-family: monospace;

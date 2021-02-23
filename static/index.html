@@ -2,10 +2,12 @@
 <link rel=stylesheet href=style.css>
 <canvas id=outputEl></canvas>
 <div id=main></div>
-<div id=controls></div>
 <div id=errorZone>
   <div id=errorSummary></div>
   <div id=errorSource></div>
+</div>
+<div id=controls>
+  <button id=resetTime>T=0</button>
 </div>
 <!--<input style="position: fixed; top: 0; left: 0; z-index: 10;" type=range min=0 max=1 step=0.01 id=slider></input>-->
 <!--<script src=hls.js></script>-->
@@ -146,9 +148,10 @@ if (navigator.mediaDevices) {
   });
 }
 
+let tBase = sessionStorage.tBase || 0;
 const ctx = {
   canvas, fastFFT, medFFT, slowFFT,
-  now: () => (Date.now()/1000) % (1 << 15) - (1 << 14),
+  now: () => (Date.now()/1000 - tBase) % (1 << 15) - (1 << 14),
   midi: new Proxy({}, {
     get(obj, k) {
       return obj[k] || 0;
@@ -256,10 +259,17 @@ document.body.addEventListener('click', e => {
 
 window.addEventListener('broadcast', e => {
   const { type, value } = e.detail;
-  if (type != 'midi')
-    return;
-  for (const k in value)
-    ctx.midi[k] = value[k];
+  if (type == 'midi') {
+    for (const k in value)
+      ctx.midi[k] = value[k];
+  } else if (type == 'timeBase') {
+    tBase = value;
+    sessionStorage.tBase = value;
+  }
+});
+
+resetTime.addEventListener('click', e => {
+  reserve.broadcast({ type: 'timeBase', value: Date.now() / 1000 });
 });
 
 </script>
