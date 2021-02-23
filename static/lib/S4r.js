@@ -1,4 +1,4 @@
-import HotFile from '/lib/HotFile.js'
+// import HotFile from '/lib/HotFile.js'
 
 const createFB = (gl, w, h, name) => {
   const tex = gl.createTexture();
@@ -31,8 +31,9 @@ const createFB = (gl, w, h, name) => {
       );
     },
     clearIfNeeded() {
-      const targetW = w || gl.drawingBufferWidth;
-      const targetH = h || gl.drawingBufferHeight;
+      const viewport = gl.getParameter(gl.VIEWPORT);
+      const targetW = w || viewport[2];
+      const targetH = h || viewport[3];
       if (this.w != targetW || this.h != targetH) {
         this.w = targetW;
         this.h = targetH;
@@ -48,16 +49,16 @@ const createFB = (gl, w, h, name) => {
       // gl.generateMipmap(gl.TEXTURE_2D);
     },
     drawInto(f) {
-      // const oldViewport = gl.getParameter(gl.VIEWPORT);
-      // const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
+      const oldViewport = gl.getParameter(gl.VIEWPORT);
+      const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
       try {
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-        // gl.viewport(0, 0, w, h);
+        gl.viewport(0, 0, this.w, this.h);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
         f();
       } finally {
-        // gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
-        // gl.viewport(...oldViewport);
+        gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
+        gl.viewport(...oldViewport);
         gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       }
     },
@@ -143,6 +144,22 @@ vec3 hsv2rgb(vec3 c)
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
 }
 
+mat4 transpose(in highp mat4 inMatrix) {
+    highp vec4 i0 = inMatrix[0];
+    highp vec4 i1 = inMatrix[1];
+    highp vec4 i2 = inMatrix[2];
+    highp vec4 i3 = inMatrix[3];
+
+    highp mat4 outMatrix = mat4(
+                 vec4(i0.x, i1.x, i2.x, i3.x),
+                 vec4(i0.y, i1.y, i2.y, i3.y),
+                 vec4(i0.z, i1.z, i2.z, i3.z),
+                 vec4(i0.w, i1.w, i2.w, i3.w)
+                 );
+
+    return outMatrix;
+}
+
 mat4 inverse(mat4 m) {
   float
       a00 = m[0][0], a01 = m[0][1], a02 = m[0][2], a03 = m[0][3],
@@ -194,6 +211,17 @@ mat4 perspectiveProj(float fov, float aspect, float near, float far) {
   );
 }
 
+// https://iquilezles.org/www/articles/distfunctions/distfunctions.htm
+float sdBoundingBox( vec3 p, vec3 b, float e )
+{
+       p = abs(p  )-b;
+  vec3 q = abs(p+e)-e;
+  return min(min(
+      length(max(vec3(p.x,q.y,q.z),0.0))+min(max(p.x,max(q.y,q.z)),0.0),
+      length(max(vec3(q.x,p.y,q.z),0.0))+min(max(q.x,max(p.y,q.z)),0.0)),
+      length(max(vec3(q.x,q.y,p.z),0.0))+min(max(q.x,max(q.y,p.z)),0.0));
+}
+
     // inv_proj_mat = inverse(perspectiveProj(
     //   PI/2.0, aspect, 0.1, 10.0
     // ));
@@ -216,6 +244,7 @@ const compileFragShader = (gl, s) => {
   const fs = gl.createShader(gl.FRAGMENT_SHADER);
   gl.shaderSource(fs, s);
   gl.compileShader(fs);
+  return fs;
   if (gl.getShaderParameter(fs, gl.COMPILE_STATUS))
     return fs;
   console.log(s);
@@ -331,6 +360,12 @@ const compile = (gl, parseTree, globals) => {
       const: false,
       value: 'u_freq',
     }); }}],
+    u_smooth_freq: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'sampler2d',
+      const: false,
+      value: 'u_smooth_freq',
+    }); }}],
     aspect: [{ type: 'native', fn: stack => { stack.push({
       type: 'symbol',
       dataType: 'float',
@@ -371,9 +406,8 @@ const compile = (gl, parseTree, globals) => {
       });
     }}],
     dims: [{ type: 'native', fn: stack => {
-      // stack.push(gl.drawingBufferWidth);
-      // stack.push(gl.drawingBufferHeight);
-      doOps(parse(`${gl.drawingBufferWidth} ${gl.drawingBufferHeight} vec2`));
+      const viewport = gl.getParameter(gl.VIEWPORT);
+      doOps(parse(`${viewport[2]} ${viewport[3]} vec2`));
     }}],
     PI: [{ type: 'native', fn: stack => { stack.push({
       type: 'symbol',
@@ -490,6 +524,19 @@ const compile = (gl, parseTree, globals) => {
         });
         stack.push({ type: "symbol", dataType: "float", const: false, value: u_name });
       }
+    }}],
+    ssf: [{ type: 'native', fn: stack => {
+      const textureID = texture_seq++;
+      tasks.push({
+        type: 'set_uniform',
+        name: 'u_smooth_freq',
+        valueType: 'sampler2D',
+        value: {
+          get tex() { return globals.smoothFreqTex; },
+          draw() {},
+        }
+      });
+      doOps(parse(`2 pow 0 vec2 u_smooth_freq swap texture2D .x`));
     }}],
     pause: [{ type: 'native', fn: stack => {
       timeVelocity = 0;
@@ -688,7 +735,7 @@ const optimizeTree = tree => {
     };
     return traverse(node);
   };
-  const canonicalTree = canonicalize(tree);
+  const canonicalTree = tree;//canonicalize(tree);
 
   const buildMetadata = node => {
     const loopStack = [];
@@ -803,6 +850,7 @@ const optimizeTree = tree => {
 }
 
 const toGLSource = tree => {
+  // console.log(tree);
   let decls = "";
   let loop_stack = [];
   let cur_loop = null;
@@ -893,10 +941,17 @@ const updateFrag = (gl, vs, globals, value) => {
             return globals.t;
           }
         },
+        u_fade: {
+          valueType: 'float',
+          get value() {
+            return globals.fade;
+          }
+        },
         aspect: {
           valueType: 'float',
           get value() {
-            return gl.drawingBufferWidth / gl.drawingBufferHeight;
+            const viewport = gl.getParameter(gl.VIEWPORT);
+            return viewport[2] / viewport[3];
           }
         },
       };
@@ -918,21 +973,22 @@ const updateFrag = (gl, vs, globals, value) => {
       const progText = `
         ${preamble}
         gl_FragColor = ${exprText};
+        gl_FragColor *= u_fade;
       `;
       // console.log('source:', progText);
 
-      const prog = gl.createProgram();
-      const shaderText = wrapFragShader(progText, defs);
-      const fs = compileFragShader(gl, shaderText);
+      const prog = globals.prog = gl.createProgram();
+      const shaderText = globals.shaderText = wrapFragShader(progText, defs);
+      const fs = globals.fs = compileFragShader(gl, shaderText);
       // console.log(shaderText);
       gl.attachShader(prog, vs);
       gl.attachShader(prog, fs);
       gl.linkProgram(prog);
-      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
-        console.log(gl.getProgramInfoLog(prog));
-        return;
-      }
-      const pLoc = gl.getUniformLocation(prog, "p_in");
+      // if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+      //   console.log(gl.getProgramInfoLog(prog));
+      //   return;
+      // }
+      let pLoc;
       newRuntimeTasks.push(() => {
         gl.useProgram(prog);
         currentProg = prog;
@@ -957,6 +1013,8 @@ const updateFrag = (gl, vs, globals, value) => {
           }
         }
 
+        if (!pLoc)
+          pLoc = gl.getUniformLocation(prog, "p_in");
         gl.enableVertexAttribArray(pLoc);
         gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
         const doDraw = () => {
@@ -1008,20 +1066,40 @@ const mesh = new Float32Array([
 ]);
 
 export default class S4r {
-  constructor(gl, paths, globals) {
-    this.gl = gl;
+  constructor(ctx, paths) {
+    const gl = this.gl = ctx.canvas.gl;
     this.texts = paths.map(() => null);
     this.ready = false;
-    this.files = paths.map((path, i) => new HotFile(new URL(path, location), text => {
-      this.texts[i] = text;
-      try {
-        this.compile();
-      } catch (e) {
-        this.error = e;
-      }
-    }));
-    this.globals = Object.create(globals);
-    this.globals.framebuffers = {};
+    this.interestedPaths = new Set(paths.map(path =>
+      new URL(path, location).pathname));
+    Promise.all(paths.map(path => fetch(path).then(r => r.text()))).then(texts => {
+      this.texts = texts;
+      this.compile();
+    }).catch(e => this.error = e);
+    // this.files = paths.map((path, i) => new HotFile(new URL(path, location), text => {
+    //   this.texts[i] = text;
+    //   try {
+    //     this.compile();
+    //   } catch (e) {
+    //     this.error = e;
+    //   }
+    // }));
+    this.globals = {
+      get freqTex() {
+        return ctx.medFFT.tex;
+      },
+      get smoothFreqTex() {
+        return ctx.slowFFT.tex;
+      },
+      get t() {
+        return ctx.now();
+      },
+      get fade() {
+        return ctx.state.fade;
+      },
+      midi: ctx.midi,
+      framebuffers: {},
+    }
 
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
@@ -1039,8 +1117,30 @@ export default class S4r {
     `);
     gl.compileShader(vs);
   }
+  checkReady() {
+    const { gl, globals } = this;
+    if (this.didErr)
+      return false;
+    if (!globals.fs)
+      return false;
+    if (!globals.prog)
+      return false;
+    if (!gl.getShaderParameter(globals.fs, gl.COMPILE_STATUS)) {
+      console.log(globals.shaderText);
+      console.log(gl.getShaderInfoLog(globals.fs));
+      this.didErr = true;
+      return false;
+    }
+    if (!gl.getProgramParameter(globals.prog, gl.LINK_STATUS)) {
+      console.log(gl.getProgramInfoLog(globals.prog));
+      this.didErr = true;
+      return false;
+    }
+    return true;
+  }
   compile() {
     this.ready = false;
+    this.didErr = false;
     for (const text of this.texts)
       if (text == null) return;
     this.runtimeTasks = updateFrag(this.gl, this.vs, this.globals, this.texts.join('\n'));

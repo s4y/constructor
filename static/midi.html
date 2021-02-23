@@ -1,0 +1,111 @@
+<link rel=x-reserve-ignore data-expr=".*"></link>
+<input type=range min=0 max=127 disabled id=crossfader>
+<script>
+
+class GenericMidiController {
+  constructor(input) {
+    this.state = JSON.parse(sessionStorage['midi.' + input.id] || "{}");
+    input.onmidimessage = e => {
+      this.handle(...e.data);
+    }
+    input.open();
+  }
+
+  handle(channel, button, value) {
+    if (channel == 176)
+      this.set(`knob${button}`, value/127);
+    if (channel == 177)
+      this.set(`note${button}`, value/127);
+  }
+
+  set(k, v) {
+    if (v === this.state[k])
+      return;
+    console.log('set', k, v);
+    this.state[k] = v;
+    window.dispatchEvent(new CustomEvent('sendbroadcast', { detail: {
+      type: "midi",
+      value: this.state
+    }}))
+    this.setNeedsSaveState();
+  }
+
+  setNeedsSaveState() {
+    if (this.needsSaveState)
+      return;
+    this.needsSaveState = true;
+    setTimeout(() => {
+      sessionStorage.midiState = JSON.stringify(this.state);
+      this.needsSaveState = false;
+    }, 500);
+  }
+}
+
+class PMIDIP30Controller extends GenericMidiController {
+  constructor(input) {
+    super(input);
+    this.state.encoder = this.state.encoder || 0;
+    this.lastEncoderVal = null;
+  }
+
+  handle(channel, button, value) {
+    const pushButtons = {
+      1: 'buttonA',
+      2: 'buttonB',
+      44: 'buttonRecord',
+      45: 'buttonPlay',
+      46: 'buttonStop',
+      47: 'buttonRev',
+      48: 'buttonFwd',
+      49: 'buttonRepeat',
+      64: 'buttonR',
+      67: 'buttonL',
+    };
+    if (button in pushButtons) {
+      this.set(pushButtons[button], value?1:0);
+    } else if (button === 9) {
+      this.setAnalog("crossfader", value);
+    } else if (button === 10) {
+      if (this.lastEncoderVal !== null) {
+        if (value === this.lastEncoderVal) {
+          if (value === 0)
+            this.set("encoder", this.state.encoder - 1);
+          else if (value == 127)
+            this.set("encoder", this.state.encoder + 1);
+        } else {
+          this.set("encoder", this.state.encoder + (value - this.lastEncoderVal));
+        }
+      }
+      this.lastEncoderVal = value;
+    } else if (button >= 14 && button <= 22) {
+      this.setAnalog(`knob${button-13}`, value);
+    } else if (button >= 23 && button <= 31) {
+      this.setAnalog(`fader${button-22}`, value);
+    } else if (button >= 32 && button <= 40) {
+      this.set(`faderButton${button-22}`, !!value);
+    } else {
+      super.handle(channel, button, value)
+    }
+  }
+
+  setAnalog(k, v) {
+    // Dead zone
+    this.set(k, Math.min(1, Math.max(0, (v-1)/124)));
+  }
+}
+
+navigator.requestMIDIAccess({
+  sysex: false
+}).then(midi => {
+  for (const input of midi.inputs.values()) {
+    if (input.name == 'USB MIDI Controller')
+      new PMIDIP30Controller(input);
+    else if (input.name == 'Midi Fighter 3D')
+      new GenericMidiController(input);
+    else if (input.name == 'Midi Fighter Twister')
+      new GenericMidiController(input);
+  }
+});
+
+</script>
+
