@@ -3,9 +3,17 @@ body {
   color: white;
   margin: 0;
   font: 16px system-ui, sans-serif;
+  overflow: auto;
+}
+
+body.program:fullscreen {
+  cursor: none;
 }
 
 #outputEl {
+  position: fixed;
+  top: 0;
+  left: 0;
   width: 100vw;
   height: 100vh;
   display: block;
@@ -60,4 +68,53 @@ body {
 
 #errorSource > div.interesting {
   background: rgba(255, 255, 255, 0.2);
+}
+
+.desk {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.desk > div {
+  border: 2px solid white;
+  margin: 1em;
+  height: calc((50vw - 2vw)/(16/9));
+  width: calc(50vw - 2em - 4px);
+  display: flex;
+}
+
+@media (max-width: 800px) {
+  .desk > div {
+  height: calc((100vw - 2vw)/(16/9));
+  width: calc(100vw - 2em - 4px);
+  }
+}
+
+.desk > .program {
+  border-color: red;
+}
+
+.desk .renderZone {
+  flex: 1;
+}
+
+.fader {
+  --value: 0;
+  width: 2em;
+  background: #222;
+  position: relative;
+}
+
+.fader::after {
+  content: "";
+  display: block;
+  background: #ccc;
+  position: absolute;
+  bottom: 0;
+  height: calc(var(--value) * 100%);
+  width: 100%;
 }

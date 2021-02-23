@@ -1,17 +1,22 @@
 {
 fitp
 
-0 0.2 0 vec3 p + =p
+1
 
 # cdist angle 3 * t + sin 0.1 * + 0.6 step inv
-p .y p .x t 0.5 * + sin 0.1 *  + abs 0.5 step inv
+#p .y p .x t 0.5 * + sin 0.1 * + abs
+# p .x abs 10 / sf 0.3 * -
+#0.8 step inv
 
-0 1 1 hsv *
+0.0 3 / p .y 1 / p .x t + sin 0.1 * 0.1 sf * + abs sf 100 pow =freq
+freq + 1 1 hsv * 0 1 clamp freq *
 }
-{
-p 1.1 * =p
-fb'f uv tex 0.8 *
-} +
-drawto'f
+#{ p 1 0.1 0.1 sf 10 pow inv * + * =p fb'f uv tex
+#0.01 0 0 vec3 addHsv
+#0.8 * } blend
 
-fb'f uv tex draw
+p .x abs sf 0.5 + 5 pow *
+
+draw
+
+#fb'f uv tex draw

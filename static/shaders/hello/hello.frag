@@ -1,5 +1,5 @@
 #extension GL_OES_standard_derivatives : enable
-precision highp float;
+#include "/shaders/s4y/common.glsl"
 
 // #includebase "../t420babe/"
 // #include "main.frag"
@@ -7,9 +7,6 @@ precision highp float;
 #includebase "../t420babe/"
 #include "./lib/common/peakamp.glsl"
 
-varying vec3 p3;
-uniform vec2 u_resolution;
-uniform float t;
 uniform peakamp u_audio;
 
 #ifndef COMMON_WRAP_TIME
@@ -25,4 +22,6 @@ void main() {
   vec3 color;
   choppy_doppler_square_fractal(p3.xy, t, audio, color);
   gl_FragColor = vec4(color, 1);
+  gl_FragColor *= step(distance(p3.xy, vec2(0)), color.b*0.6);
+  gl_FragColor *= 1.-distance(p3.xy, vec2(0));
 }

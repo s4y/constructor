@@ -25,7 +25,7 @@ export default class ProgramOutput {
     // console.log('show changed');
     if (this.layers.length) {
       this.pendingLayers = layers.slice();
-      this.fade = 0;
+      this.fade = 1;
       this.allocFadeBuf();
     } else {
       this.layers = layers;

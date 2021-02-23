@@ -1,213 +1,37 @@
 <!DOCTYPE html>
 <link rel=stylesheet href=style.css>
 <canvas id=outputEl></canvas>
+<div id=main></div>
 <div id=controls></div>
 <div id=errorZone>
   <div id=errorSummary></div>
   <div id=errorSource></div>
 </div>
+<!--<input style="position: fixed; top: 0; left: 0; z-index: 10;" type=range min=0 max=1 step=0.01 id=slider></input>-->
+<!--<script src=hls.js></script>-->
 <script type=module>
 
-import S4r from './lib/S4r.js'
+// const astream = document.createElement('audio');
+// astream.autoplay = true;
+// 
+// var hls = new Hls();
+// hls.loadSource('/astream/audio.m3u8');
+// hls.attachMedia(astream);
+// // hls.on(Hls.Events.MANIFEST_PARSED,function() {
+// //     astream.play();
+// // });
 
-class Canvas {
-  constructor(canvasEl, initFn) {
-    this.canvasEl = canvasEl;
-    this.initFn = initFn;
-    this.gl = canvasEl.getContext('webgl', {
-      alpha: false,
-      antialias: false,
-      powerPreference: 'high-performance'
-    });
-    this.props = {};
-    this.programs = [];
-    this.reinit();
-  }
+const qs = location.search
+  .substr(1)
+  .split('&')
+  .filter(v => v)
+  .map(c => c.split('=').map(decodeURIComponent))
+  .reduce((params, [k, v]) => (params[k] = v, params), {});
 
-  resize() {
-    const canvasEl = this.canvasEl;
-    canvasEl.width = canvasEl.clientWidth * devicePixelRatio;
-    canvasEl.height = canvasEl.clientHeight * devicePixelRatio;
-    this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight);
-  }
-
-  reinit() {
-    if (this.initFn)
-      this.initFn(this.gl);
-  }
-
-  draw(f) {
-    f(this.gl);
-  }
-}
-
-class Shader {
-  constructor(gl, path, shader, onchange) {
-    this.gl = gl;
-    this.path = path;
-    this.shader = shader;
-    this.onchange = onchange;
-    this.baseURL = new URL(path, location.href);
-    this.interestedPaths = new Set();
-    this.changeListener = e => {
-      const changedPath = new URL(e.detail, location).pathname;
-      if (this.interestedPaths.has(changedPath))
-        this.ready = this.reload();
-    };
-    // window.addEventListener('sourcechange', this.changeListener);
-    this.ready = this.reload();
-  }
-  async reload() {
-    const { gl, path, shader } = this;
-    this.interestedPaths.clear();
-    this.interestedPaths.add(path);
-    const text = this.text = await this.loadText(path, this.baseURL);
-    gl.shaderSource(shader, text);
-    gl.compileShader(shader);
-    this.onchange();
-  }
-  async preprocess(textIn, url) {
-    let base = url;
-    const directives = {
-      includebase: path => {
-        base = new URL(path, base);
-        return "";
-      },
-      include: path => {
-        const url = new URL(path, base);
-        return this.loadText(url.pathname, base)
-      }
-    };
-    let parts = [];
-    let hash;
-    while ((hash = textIn.indexOf('#')) != -1) {
-      const match = textIn.match(/#([a-z]+) "([^"\n]+)"/);
-      if (match && (match.index == 0 || textIn[match.index-1] == '\n')) {
-        parts.push(textIn.substr(0, match.index));
-        parts.push(directives[match[1]](match[2]));
-        textIn = textIn.substr(match.index + match[0].length);
-      } else {
-        parts.push(textIn.substr(0, hash + 1));
-        textIn = textIn.substr(hash + 1);
-      }
-    }
-    parts.push(textIn);
-    return (await Promise.all(parts)).join('');
-  }
-  async loadText(path, url) {
-    this.interestedPaths.add(path);
-    const r = await fetch(path);
-    const text = await r.text();
-    return await this.preprocess(text, url);
-  }
-  destroy() {
-    window.removeEventListener('sourcechange', this.changeListener);
-  }
-}
-
-class ShaderProgram {
-  constructor(gl, vsPath, fsPath) {
-    this.gl = gl;
-    this.vsPath = vsPath;
-    this.fsPath = fsPath;
-    // this.parallelExt = gl.getExtension('GL_KHR_parallel_shader_compile');
-
-    this.uniforms = {};
-
-    const buffer = gl.createBuffer();
-    this.mesh = new Float32Array([
-      -1, 1, 0, -1, -1, 0,
-      1, 1, 0, 1, -1, 0,
-    ]);
-    gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, this.mesh, gl.STATIC_DRAW);
-
-    this.program = gl.createProgram();
-
-    const onchange = () => this.link();
-    this.vs = new Shader(gl, this.vsPath, gl.createShader(gl.VERTEX_SHADER), onchange);
-    this.fs = new Shader(gl, this.fsPath, gl.createShader(gl.FRAGMENT_SHADER), onchange);
-
-    gl.attachShader(this.program, this.vs.shader);
-    gl.attachShader(this.program, this.fs.shader);
-    this.link();
-  }
-  async link() {
-    const { gl } = this;
-    this.ready = null;
-    this.linking = true;
-    await Promise.all([this.vs.ready, this.fs.ready]);
-    gl.linkProgram(this.program);
-    this.linking = false;
-  }
-  buildUniforms() {
-    const { gl, program } = this;
-    this.uniformSetters = [];
-    for (const k in this.uniforms) {
-      const loc = gl.getUniformLocation(program, k);
-      if (!loc) {
-        console.info('missing or unused uniform', k);
-        continue;
-      }
-      let lastVal;
-      this.uniformSetters.push(() => {
-        let val = this.uniforms[k];
-        if (typeof val == 'function')
-          val = val();
-        if (val instanceof WebGLTexture) {
-          gl.activeTexture(gl.TEXTURE0);
-          gl.bindTexture(gl.TEXTURE_2D, val);
-          gl.uniform1i(loc, 0);
-          return;
-        }
-        if (val == lastVal)
-          return;
-        if (!Array.isArray(val))
-          val = [val];
-        lastVal = val;
-        gl[`uniform${val.length}f`](loc, ...val);
-      });
-    }
-  }
-  checkReady() {
-    const { gl } = this;
-    if (this.linking)
-      return false;
-    if (this.ready != null)
-      return this.ready;
-    // return this.gl.getProgramParameter(this.program, this.parallelExt.COMPLETION_STATUS_KHR);
-    if (gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-      const pLoc = gl.getUniformLocation(this.program, "p_in");
-      gl.enableVertexAttribArray(pLoc);
-      gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
-      this.buildUniforms();
-      return (this.ready = true);
-    }
-
-    if (!gl.getShaderParameter(this.vs.shader, gl.COMPILE_STATUS)) {
-      this.error = new Error("Error in vertex shader");
-      this.error.infoLog = gl.getShaderInfoLog(this.vs.shader);
-      this.error.shaderSource = this.vs.text;
-    } else if (!gl.getShaderParameter(this.fs.shader, gl.COMPILE_STATUS)) {
-      this.error = new Error("Error in fragment shader");
-      this.error.infoLog = gl.getShaderInfoLog(this.fs.shader);
-      this.error.shaderSource = this.fs.text;
-    } else {
-      this.error = new Error("Error linking");
-      this.error.infoLog = gl.getProgramInfoLog(this.program);
-    }
-    return (this.ready = false);
-  }
-  draw() {
-    const { gl } = this;
-    gl.useProgram(this.program);
-
-    for (const setter of this.uniformSetters)
-      setter();
-
-    gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.mesh.length / 3);
-  }
-}
+import Canvas from '/lib/Canvas.js'
+import Show from '/lib/Show.js'
+import Desk from './lib/Desk.js'
+import ProgramOutput from './lib/ProgramOutput.js'
 
 const canvas = new Canvas(outputEl);
 window.addEventListener('resize', () => canvas.resize());
@@ -216,11 +40,9 @@ document.body.onload = () => {
   canvas.resize();
 };
 
-canvas.gl.getExtension('OES_standard_derivatives');
 canvas.gl.enable(canvas.gl.BLEND);
+canvas.gl.getExtension("OES_standard_derivatives");
 canvas.gl.blendFunc(canvas.gl.ONE, canvas.gl.ONE_MINUS_SRC_ALPHA);
-
-// canvas.gl.disable(canvas.gl.DEPTH_TEST);
 
 const showError = e => {
   errorZone.classList.toggle('visible', !!e);
@@ -263,22 +85,19 @@ const makeFilteredSampler = (type, freq) => {
   };
 }
 
-const ac = new (window.AudioContext || window.webkitAudioContext)();
-const mixer = ac.createGain();
-const kMaxFrequency = 15000;
-const fft = (() => {
+const makeFFT = (smoothing, how) => {
   const { gl } = canvas;
   const analyser = ac.createAnalyser();
-  analyser.fftSize = 2048;
-  analyser.smoothingTimeConstant = 0.1;
+  analyser.fftSize = 4096;
+  analyser.smoothingTimeConstant = smoothing;
   mixer.connect(analyser);
   const buf = new Uint8Array(Math.pow(2, Math.ceil(Math.log2(Math.floor(kMaxFrequency / ac.sampleRate * (analyser.fftSize / 2))))));
   let lastUpdate = null;
 
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, how);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, how);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
@@ -307,62 +126,63 @@ const fft = (() => {
       return buf;
     },
   }
-})();
-const lowPass = makeFilteredSampler('lowpass', 80);
-const highPass = makeFilteredSampler('highpass', 2000);
-const bandPass = makeFilteredSampler('bandpass', 500);
+};
 
-(async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({
+const ac = new (window.AudioContext || window.webkitAudioContext)();
+const mixer = ac.createGain();
+const kMaxFrequency = 15000;
+const fastFFT = makeFFT(0.0, canvas.gl.NEAREST);
+const medFFT = makeFFT(0.7, canvas.gl.LINEAR);
+const slowFFT = makeFFT(0.94, canvas.gl.LINEAR);
+
+if (navigator.mediaDevices) {
+  navigator.mediaDevices.getUserMedia({
     audio: {
       noiseSuppression: false,
       echoCancellation: false,
     }
+  }).then(stream => {
+    ac.createMediaStreamSource(stream).connect(mixer);
   });
-  ac.createMediaStreamSource(stream).connect(mixer);
-})();
+}
 
-const uniforms = {
-  t: () => (Date.now()/1000) % (1 << 15) - (1 << 14),
-  u_resolution: () => [canvas.gl.drawingBufferWidth, canvas.gl.drawingBufferHeight],
-  'u_audio.lowpass': () => lowPass.get(),
-  'u_audio.highpass': () => highPass.get(),
-  'u_audio.bandpass': () => bandPass.get(),
-  'u_audio.notch': () => bandPass.get(),
-  'u_freq': () => fft.tex,
+const ctx = {
+  canvas, fastFFT, medFFT, slowFFT,
+  now: () => (Date.now()/1000) % (1 << 15) - (1 << 14),
+  midi: new Proxy({}, {
+    get(obj, k) {
+      return obj[k] || 0;
+    }
+  }),
 };
+ctx.lowpass = makeFilteredSampler('lowpass', 80);
+ctx.highpass = makeFilteredSampler('highpass', 2000);
+ctx.bandpass = makeFilteredSampler('bandpass', 500);
+ctx.show = new Show(ctx, '/show.js');
 
-let activeProgram;
-let pendingProgram;
+const renderer = new (('program' in qs) ? ProgramOutput : Desk)(ctx);
+if (renderer.el)
+  main.appendChild(renderer.el);
 
-const s4rShader = new S4r(canvas.gl, [
-  'shaders/s4y/common.s4r',
-  'shaders/s4y/vortex.s4r',
-], {
-  get freqTex() {
-    return fft.tex;
-  },
-  get t() {
-    return (Date.now()/1000) % (1 << 15) - (1 << 14);
-  },
-});
+if ('program' in qs)
+  document.body.classList.add('program');
 
-let doLoad = () => {
-  pendingProgram = new ShaderProgram(
-    canvas.gl,
-    '/shaders/default.vert',
-    '/shaders/s4y/01.frag');
-  pendingProgram.uniforms = uniforms;
-};
+// if ('program' in qs) {
+// canvas.heightOffset = 266;
+// }
 
-doLoad();
+canvas.gl.clearColor(0, 0, 0, 1);
 
 let fade = 1;
 let lastError = null;
 const draw = () => {
   canvas.draw(gl => {
-    if (s4rShader.ready)
-      s4rShader.draw();
+    gl.clear(gl.COLOR_BUFFER_BIT);
+    renderer.draw();
+    if (renderer.error != lastError) {
+      lastError = renderer.error;
+      showError(renderer.error);
+    }
     return;
     if (pendingProgram && pendingProgram.checkReady()) {
       if (fade) {
@@ -391,21 +211,55 @@ const draw = () => {
         lastError = err;
       }
   });
-  requestAnimationFrame(draw);
 };
-requestAnimationFrame(draw);
+
+const handleAnimationFrame = () => {
+  draw();
+  requestAnimationFrame(handleAnimationFrame);
+}
+requestAnimationFrame(handleAnimationFrame);
 
 // Don't reload the page when shaders change.
 window.addEventListener('sourcechange', e => {
   const changedPath = new URL(e.detail, location).pathname;
   if (changedPath.startsWith('/shaders/'))
     e.preventDefault();
+});
 
-  let prog = activeProgram || pendingProgram;
-  return;
-  if (prog.vs.interestedPaths.has(changedPath) || prog.fs.interestedPaths.has(changedPath))
-    doLoad();
-    
+window.addEventListener('keydown', e => {
+  if (e.code == 'KeyF')
+    document.body.requestFullscreen();
+});
+
+// window.addEventListener('scroll', e => {
+//   canvas.canvasEl.offsetTop;
+//   draw();
+//   canvas.gl.finish();
+// }, { passive: false, });
+
+document.body.addEventListener('click', e => {
+  ac.resume();
+  // astream.play();
+  // document.body.appendChild(astream);
+});
+
+// const node = ac.createMediaElementSource(astream);
+// node.connect(mixer);
+// 
+// const gain = ac.createGain();
+// node.connect(gain);
+// gain.connect(ac.destination);
+// slider.addEventListener('input', e => {
+//   gain.gain.value = slider.valueAsNumber;
+// });
+
+
+window.addEventListener('broadcast', e => {
+  const { type, value } = e.detail;
+  if (type != 'midi')
+    return;
+  for (const k in value)
+    ctx.midi[k] = value[k];
 });
 
 </script>
