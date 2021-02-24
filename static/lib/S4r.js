@@ -942,12 +942,6 @@ const updateFrag = (gl, vs, globals, value) => {
             return globals.t;
           }
         },
-        u_fade: {
-          valueType: 'float',
-          get value() {
-            return globals.fade;
-          }
-        },
         aspect: {
           valueType: 'float',
           get value() {
@@ -974,7 +968,6 @@ const updateFrag = (gl, vs, globals, value) => {
       const progText = `
         ${preamble}
         gl_FragColor = ${exprText};
-        gl_FragColor *= u_fade;
       `;
       // console.log('source:', progText);
 
@@ -1098,9 +1091,6 @@ export default class S4r {
       },
       get t() {
         return ctx.now();
-      },
-      get fade() {
-        return ctx.state.fade;
       },
       midi: ctx.midi,
       framebuffers: {},

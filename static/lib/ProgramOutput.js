@@ -120,9 +120,6 @@ export default class ProgramOutput {
       if (!layer.instance.checkReady())
         continue;
       this.drawLayer(layer.instance);
-      // this.copyProgram.uniforms.buf = this.layerBufs.get(layer.instance)[0];
-      // this.copyProgram.uniforms.u_fade = 1.;
-      // this.copyProgram.draw();
     }
     if (this.pendingLayers && pendingLayersReady) {
       this.fade -= 0.01;

@@ -119,7 +119,6 @@ const getCopyProgram = ctx => {
   if (!sharedCopyProgram) {
     sharedCopyProgram = new ShaderProgram({
       ...ctx,
-      state: { fade: 1 },
     }, '/shaders/default.vert', '/shaders/util/copy.frag');
   }
   return sharedCopyProgram;
@@ -147,7 +146,6 @@ export default class ShaderProgram {
       'u_freq_fast': () => ctx.fastFFT.tex,
       'u_freq_med': () => ctx.medFFT.tex,
       'u_freq_slow': () => ctx.slowFFT.tex,
-      'u_fade': () => ctx.state.fade,
     };
 
     if (fsPath != '/shaders/util/copy.frag') {

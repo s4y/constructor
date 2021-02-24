@@ -3,7 +3,6 @@ precision highp float;
 varying vec3 p3;
 uniform vec2 u_resolution;
 uniform float t;
-uniform float u_fade;
 uniform sampler2D u_freq;
 uniform struct {
   float lowpass;
@@ -50,5 +49,4 @@ void main() {
   // gl_FragColor = vec4(tan(t));
 
   gl_FragColor *= pow(abs(p.x)+0.6, 5.);
-  gl_FragColor *= u_fade;
 }
