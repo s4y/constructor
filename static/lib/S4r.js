@@ -55,6 +55,7 @@ const createFB = (gl, w, h, name) => {
       try {
         gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
         gl.viewport(0, 0, this.w, this.h);
+        gl.clearColor(0, 0, 0, 0);
         gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
         f();
       } finally {

@@ -42,6 +42,7 @@ class Framebuffer {
       this.alloc();
     }
     gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
+    gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     gl.viewport(...this.viewport);
     f();
