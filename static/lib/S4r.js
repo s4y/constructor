@@ -1000,11 +1000,15 @@ const updateFrag = (gl, vs, globals, value) => {
           const v = u.value;
           if (u.valueType === 'sampler2D') {
             const fb = u.value;
-            const tex = fb.tex;
-            let id = textures.indexOf(fb.tex);
+            let id = textures.indexOf(fb);
             if (id < 0)
-              id = textures.push(fb.tex) - 1;
+              id = textures.push(fb) - 1;
+
+            // Activate here to make sure accessing fb.tex,
+            // if its getter does any drawing, doesn't stomp
+            // another texture unit.
             gl.activeTexture(gl['TEXTURE' + id]);
+            const tex = fb.tex;
             gl.bindTexture(gl.TEXTURE_2D, fb.tex);
             fb.draw();
             gl.uniform1i(loc, id);
