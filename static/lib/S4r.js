@@ -67,13 +67,13 @@ const createFB = (gl, w, h, name) => {
   return ret;
 }
 
-const createFBPair = (gl, w, h) => {
+const createFBPair = (gl, w, h, copyFrom) => {
   const fbs = [createFB(gl, w, h, 'alfalfa'), createFB(gl, w, h, 'bravado')];
   return {
     get w() { return fbs[0].w },
     get h() { return fbs[0].h }, 
     get tex() {
-      return fbs[0].tex;
+      return copyFrom ? copyFrom.tex : fbs[0].tex;
     },
     draw() {
       return fbs[0].draw();
@@ -81,6 +81,7 @@ const createFBPair = (gl, w, h) => {
     drawInto(f) {
       fbs.reverse();
       fbs[0].drawInto(f);
+      copyFrom = null;
     },
   };
 };
@@ -390,7 +391,7 @@ const compile = (gl, parseTree, globals) => {
     fb: [{ type: 'native', fn: (stack, tag) => {
       let fb = globals.framebuffers[tag];
       if (!fb)
-        globals.framebuffers[tag] = createFBPair(gl);
+        globals.framebuffers[tag] = createFBPair(gl, 0, 0, globals.old && globals.old.globals.framebuffers[tag]);
       const u_name = `fb_${tag}`;
       tasks.push({
         type: 'set_uniform',
@@ -1070,7 +1071,7 @@ const mesh = new Float32Array([
 ]);
 
 export default class S4r {
-  constructor(ctx, paths) {
+  constructor(ctx, paths, old) {
     const gl = this.gl = ctx.canvas.gl;
     this.texts = paths.map(() => null);
     this.ready = false;
@@ -1103,6 +1104,7 @@ export default class S4r {
       },
       midi: ctx.midi,
       framebuffers: {},
+      old,
     }
 
     const buffer = gl.createBuffer();
@@ -1153,5 +1155,7 @@ export default class S4r {
   draw() {
     for (const task of this.runtimeTasks)
       task();
+    if (this.globals.old)
+      this.globals.old = null;
   }
 }

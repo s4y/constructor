@@ -2,7 +2,7 @@ import ShaderProgram from '/lib/ShaderProgram.js'
 import S4r from '/lib/S4r.js'
 
 class ShowLayer {
-  constructor(ctx, config) {
+  constructor(ctx, config, old) {
     this.config = config;
     this.state = { fade: 1, };
     const childCtx = { ...ctx, state: this.state };
@@ -11,7 +11,7 @@ class ShowLayer {
       this.instance = new S4r(childCtx, [
         'shaders/s4y/common.s4r',
         config.path,
-      ]);
+      ], old);
     } else if (ext == 'frag' || ext == 'fs') {
       this.instance = new ShaderProgram(
         childCtx, '/shaders/default.vert', config.path);
@@ -40,7 +40,7 @@ export default class Show {
         const layer = this.layers[i];
         if (!layer.instance.interestedPaths.has(changedPath))
           continue;
-        this.layers[i] = this.instantiateLayer(this.layers[i].config);
+        this.layers[i] = this.instantiateLayer(this.layers[i].config, this.layers[i].instance);
         this.notifyObservers();
       }
     });
@@ -66,8 +66,8 @@ export default class Show {
     this.layers[which].state.fade = fade;
     // this.layers[which].instance.setParam('fade', fade);
   }
-  instantiateLayer(config) {
-    return new ShowLayer(this.ctx, config);
+  instantiateLayer(config, old) {
+    return new ShowLayer(this.ctx, config, old);
   }
   async reload() {
     const r = await fetch(this.path);
