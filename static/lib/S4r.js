@@ -9,11 +9,12 @@ const createFB = (gl, w, h, name) => {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
   const fb = gl.createFramebuffer();
+  const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
   gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
   gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
 
   gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+  gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
 
   const ret = {
     tex,
@@ -59,7 +60,6 @@ const createFB = (gl, w, h, name) => {
       } finally {
         gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
         gl.viewport(...oldViewport);
-        gl.bindFramebuffer(gl.FRAMEBUFFER, null);
       }
     },
   };

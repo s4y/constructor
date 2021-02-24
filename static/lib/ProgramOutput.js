@@ -12,7 +12,7 @@ export default class ProgramOutput {
 
     this.copyProgram = new ShaderProgram({
       ...ctx,
-      state: { fade: () => (console.log('hit'),this.fade) },
+      state: { fade: 1 },
     }, '/shaders/default.vert', '/shaders/util/copy.frag');
 
     ctx.show.addObserver(layers => {

@@ -14,9 +14,10 @@ class Framebuffer {
       gl.RGBA, gl.UNSIGNED_BYTE, null
     );
     const fb = gl.createFramebuffer();
+    const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
     this.fb = fb;
     this.tex = tex;
     this.viewport = [0, 0, viewport[2], viewport[3]];
