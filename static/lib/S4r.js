@@ -408,8 +408,22 @@ const compile = (gl, parseTree, globals) => {
       });
     }}],
     dims: [{ type: 'native', fn: stack => {
-      const viewport = gl.getParameter(gl.VIEWPORT);
-      doOps(parse(`${viewport[2]} ${viewport[3]} vec2`));
+      const u_name = `u_dims`;
+      tasks.push({
+        type: 'set_uniform',
+        name: u_name,
+        valueType: 'vec2',
+        get value() {
+          return gl.getParameter(gl.VIEWPORT).slice(2);
+        },
+      });
+      stack.push({
+        type: 'symbol',
+        dataType: 'vec2',
+        const: false,
+        value: u_name,
+      });
+
     }}],
     PI: [{ type: 'native', fn: stack => { stack.push({
       type: 'symbol',
@@ -1007,6 +1021,8 @@ const updateFrag = (gl, vs, globals, value) => {
             gl.bindTexture(gl.TEXTURE_2D, fb.tex);
             fb.draw();
             gl.uniform1i(loc, id);
+          } else if (u.valueType === 'vec2') {
+            gl.uniform2f(loc, ...u.value);
           } else {
             gl.uniform1f(loc, u.value);
           }

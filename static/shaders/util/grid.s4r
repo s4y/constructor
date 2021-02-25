@@ -1,0 +1,6 @@
+dims 40 / =count
+p .xy unbal count * 1 mod 0.5 vec2.1 step =p
+p .x p .y - abs 0.4 step
+0.2 *
+vec3.1 1 vec4.2
+draw

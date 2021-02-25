@@ -1,5 +1,6 @@
 import XTouchController from '/lib/XTouchController.js'
 import ProgramOutput from '/lib/ProgramOutput.js'
+import S4r from '/lib/S4r.js'
 
 class Fader {
   constructor() {
@@ -43,6 +44,11 @@ export default class Desk {
     this.renderEls = [];
     this.faders = [];
     this.buildDOM();
+
+    this.gridProgram = new S4r(ctx, [
+      'shaders/s4y/common.s4r',
+      'shaders/util/grid.s4r',
+    ]);
 
     ctx.show.addObserver(layers => this.showChanged(layers));
   }
@@ -96,6 +102,8 @@ export default class Desk {
         gl.drawingBufferHeight - (rect.bottom) * heightMultiple,
         rect.width * widthMultiple,
         rect.height * heightMultiple);
+      if (output != this.programOutput && this.gridProgram.checkReady())
+        this.gridProgram.draw();
       if (output.checkReady())
         output.draw();
       if (output.error && !this.error)
