@@ -67,21 +67,23 @@ const showError = e => {
   }
 }
 
-const makeFilteredSampler = (type, freq) => {
+const makeFilteredSampler = (type) => {
   const filter = ac.createBiquadFilter();
   const analyser = ac.createAnalyser();
-  const buf = new Uint8Array(ac.sampleRate / 30);
+  const buf = new Uint8Array(ac.sampleRate * (40/1000));
   let decayVal = 0;
   filter.type = type
-  filter.frequency.value = freq;
+  filter.frequency.value = 400;
+  filter.Q.value = 0.5;
 
   mixer.connect(filter);
   filter.connect(analyser);
   return {
     get() {
       analyser.getByteTimeDomainData(buf);
-      const ret = Math.pow(buf.reduce((acc, x) => Math.abs(x-128)) / 128, 2);
-      decayVal = Math.min(1, decayVal * 0.2 + ret);
+      const ret = Math.pow(buf.reduce((acc, x) => Math.max(acc, Math.abs(x-128)), 0) / 128, 1);
+      return ret;
+      decayVal = Math.min(1, decayVal * 0.5 + ret);
       return decayVal;
     }
   };
@@ -158,9 +160,10 @@ const ctx = {
     }
   }),
 };
-ctx.lowpass = makeFilteredSampler('lowpass', 80);
-ctx.highpass = makeFilteredSampler('highpass', 2000);
-ctx.bandpass = makeFilteredSampler('bandpass', 500);
+ctx.lowpass = makeFilteredSampler('lowpass');
+ctx.highpass = makeFilteredSampler('highpass');
+ctx.bandpass = makeFilteredSampler('bandpass');
+ctx.notch = makeFilteredSampler('notch');
 ctx.show = new Show(ctx, '/show.js');
 
 const renderer = new (('program' in qs) ? ProgramOutput : Desk)(ctx);

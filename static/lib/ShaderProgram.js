@@ -143,7 +143,7 @@ export default class ShaderProgram {
       'u_audio.lowpass': () => ctx.lowpass.get(),
       'u_audio.highpass': () => ctx.highpass.get(),
       'u_audio.bandpass': () => ctx.bandpass.get(),
-      'u_audio.notch': () => ctx.bandpass.get(),
+      'u_audio.notch': () => ctx.notch.get(),
       'u_freq_fast': () => ctx.fastFFT.tex,
       'u_freq_med': () => ctx.medFFT.tex,
       'u_freq_slow': () => ctx.slowFFT.tex,
