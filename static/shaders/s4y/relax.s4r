@@ -1,0 +1,15 @@
+
+fitp
+
+
+cdist
+p .y 10 * t + +
+p .y sin p .x t + sin + +
+sin unbal 0 1 clamp 10 pow inv
+inv
+p .x abs 4 / ssf 1 1 hsv *
+
+fb'f uv tex 0.9 * +
+drawto'f
+
+fb'f uv tex draw
