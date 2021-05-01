@@ -31,6 +31,8 @@ export default class XTouchController {
         port.open();
       } else if (port.type == 'output') {
         this.output = port;
+        console.log('big bank', this.bank.faders);
+        this.sendBank();
       }
     } else {
       if (port.type == 'input')
@@ -41,7 +43,7 @@ export default class XTouchController {
   }
   discoverPorts(ports) {
     for (const [id, port] of ports) {
-      if (port.name == 'X-Touch INT')
+      if (port.name == 'X-Touch MIDI 1')
         this.handlePort(port);
     }
   }
@@ -101,6 +103,7 @@ export default class XTouchController {
   sendFader(i, value) {
     if (!this.output)
       return;
+    console.log('send', i, value);
     this.output.send([0xe0 + i, (value & 0x7f), value >> 7]);
   }
   handleData([channel, note, value]) {

@@ -89,10 +89,11 @@ const makeFilteredSampler = (type) => {
   };
 }
 
-const makeFFT = (smoothing, how) => {
+const makeFFT = (smoothing, size, how) => {
   const { gl } = canvas;
   const analyser = ac.createAnalyser();
-  analyser.fftSize = 4096;
+  if (size)
+    analyser.fftSize = size;
   analyser.smoothingTimeConstant = smoothing;
   mixer.connect(analyser);
   const buf = new Uint8Array(Math.pow(2, Math.ceil(Math.log2(Math.floor(kMaxFrequency / ac.sampleRate * (analyser.fftSize / 2))))));
@@ -135,9 +136,9 @@ const makeFFT = (smoothing, how) => {
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const mixer = ac.createGain();
 const kMaxFrequency = 15000;
-const fastFFT = makeFFT(0.0, canvas.gl.NEAREST);
-const medFFT = makeFFT(0.7, canvas.gl.LINEAR);
-const slowFFT = makeFFT(0.94, canvas.gl.LINEAR);
+const fastFFT = makeFFT(0.0, 4096, canvas.gl.NEAREST);
+const medFFT = makeFFT(0.7, 4096, canvas.gl.LINEAR);
+const slowFFT = makeFFT(0.94, 8192, canvas.gl.LINEAR);
 
 if (navigator.mediaDevices) {
   navigator.mediaDevices.getUserMedia({
@@ -164,7 +165,7 @@ ctx.lowpass = makeFilteredSampler('lowpass');
 ctx.highpass = makeFilteredSampler('highpass');
 ctx.bandpass = makeFilteredSampler('bandpass');
 ctx.notch = makeFilteredSampler('notch');
-ctx.show = new Show(ctx, '/show.js');
+ctx.show = new Show(ctx, '/show.js', qs.program || 'default');
 
 const renderer = new (('program' in qs) ? ProgramOutput : Desk)(ctx);
 if (renderer.el)
@@ -183,39 +184,13 @@ let fade = 1;
 let lastError = null;
 const draw = () => {
   canvas.draw(gl => {
+    canvas.gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
     renderer.draw();
     if (renderer.error != lastError) {
       lastError = renderer.error;
       showError(renderer.error);
     }
-    return;
-    if (pendingProgram && pendingProgram.checkReady()) {
-      if (fade) {
-        gl.blendFunc(gl.ONE, gl.ONE);
-        pendingProgram.draw();
-        fade *= 0.9;
-        if (fade < 0.001)
-          fade = 0;
-      } else {
-        activeProgram = pendingProgram;
-        pendingProgram = null;
-        fade = 1;
-      }
-    }
-    if (pendingProgram) {
-        gl.blendColor(1, 1, 1, 1-fade);
-        gl.blendFunc(gl.ONE_MINUS_CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
-    } else {
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    }
-    if (activeProgram && activeProgram.checkReady())
-      activeProgram.draw();
-      let err = (pendingProgram && pendingProgram.error) || (activeProgram && activeProgram.error);
-      if (err != lastError) {
-        showError(err);
-        lastError = err;
-      }
   });
 };
 

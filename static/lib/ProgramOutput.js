@@ -1,8 +1,10 @@
+import Framebuffer from '/lib/Framebuffer.js'
 import ShaderProgram from '/lib/ShaderProgram.js'
 
 export default class ProgramOutput {
   constructor(ctx) {
     this.ctx = ctx;
+    this.fade = 1;
     this.el = document.createElement('div');
     this.layers = [];
     this.layerBufs = new WeakMap();
@@ -10,10 +12,10 @@ export default class ProgramOutput {
     renderZone.classList.add('renderZone');
     this.el.appendChild(renderZone);
 
-    this.copyProgram = new ShaderProgram({
-      ...ctx,
-      state: { fade: 1 },
-    }, '/shaders/default.vert', '/shaders/util/copy.frag');
+    this.copyProgram = new ShaderProgram(ctx, '/shaders/default.vert', '/shaders/util/copy.frag');
+    this.blackProgram = new ShaderProgram(ctx, '/shaders/default.vert', '/shaders/util/black.frag');
+    this.fadeFb = new Framebuffer(ctx.canvas.gl);
+    this.copyProgram.uniforms.buf = this.fadeFb.tex;
 
     ctx.show.addObserver(layers => {
       // setTimeout(() => {
@@ -25,8 +27,7 @@ export default class ProgramOutput {
     // console.log('show changed');
     if (this.layers.length) {
       this.pendingLayers = layers.slice();
-      this.fade = 1;
-      this.allocFadeBuf();
+      this.crossFade = 1;
     } else {
       this.layers = layers;
     }
@@ -51,27 +52,6 @@ export default class ProgramOutput {
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     return [tex, fb];
   }
-  allocFadeBuf() {
-    const gl = this.ctx.canvas.gl;
-    const viewport = gl.getParameter(gl.VIEWPORT);
-    this.fadeTex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, this.fadeTex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGBA,
-      viewport[2], viewport[3], 0,
-      gl.RGBA, gl.UNSIGNED_BYTE, null
-    );
-    this.fadeFb = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fadeFb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, this.fadeTex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    this.copyProgram.uniforms.buf = this.fadeTex;
-    this.copyProgram.buildUniforms();
-  }
   checkReady() {
     for (const layer of this.layers) {
       if (!layer.instance.checkReady())
@@ -82,18 +62,27 @@ export default class ProgramOutput {
   drawLayer(layer) {
     let buf = this.layerBufs.get(layer);
     if (!buf) {
-      buf = this.allocLayerBuf();
+      buf = new Framebuffer(this.ctx.canvas.gl);
       this.layerBufs.set(layer, buf);
     }
-    const [tex, fb] = buf;
     const gl = this.ctx.canvas.gl;
     // gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     // gl.clear(gl.COLOR_BUFFER_BIT);
     layer.draw();
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    return;
+    buf.drawInto(() => {
+      layer.draw();
+    });
+    this.copyProgram.uniforms.buf = buf.tex;
+    if (this.copyProgram.checkReady())
+      this.copyProgram.draw();
   }
   draw() {
     const gl = this.ctx.canvas.gl;
+    if (this.blackProgram.checkReady())
+      this.blackProgram.draw();
+    if (this.fade == 0)
+      return;
     let pendingLayersReady = (() => {
       if (!this.pendingLayers)
         return false;
@@ -103,7 +92,7 @@ export default class ProgramOutput {
       }
       return true;
     })();
-    if (pendingLayersReady && this.fade <= 0) {
+    if (pendingLayersReady && this.crossFade <= 0) {
       this.layers = this.pendingLayers;
       this.pendingLayers = null;
     }
@@ -122,27 +111,32 @@ export default class ProgramOutput {
       this.drawLayer(layer.instance);
     }
     if (this.pendingLayers && pendingLayersReady) {
-      this.fade -= 0.01;
-      const oldViewport = gl.getParameter(gl.VIEWPORT);
-      gl.viewport(0, 0, oldViewport[2], oldViewport[3]);
-      gl.bindFramebuffer(gl.FRAMEBUFFER, this.fadeFb);
-      gl.clear(gl.COLOR_BUFFER_BIT);
-      this.fade -= 0.01;
-      for (const layer of this.pendingLayers)
-        layer.instance.draw();
-      gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-      gl.viewport(...oldViewport);
-      gl.blendColor(1, 1, 1, this.fade);
-      gl.blendFunc(gl.ONE_MINUS_CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
-      if (this.copyProgram.checkReady())
+      this.crossFade -= 0.04;
+      this.fadeFb.drawInto(() => {
+        for (const layer of this.pendingLayers)
+          layer.instance.draw();
+      });
+      this.copyProgram.uniforms.buf = this.fadeFb.tex;
+      if (this.copyProgram.checkReady()) {
+        gl.blendColor(1, 1, 1, this.crossFade);
+        gl.blendFunc(gl.ONE_MINUS_CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
         this.copyProgram.draw();
+        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
+      }
       else if (this.copyProgram.error)
         console.error(this.copyProgram.error.infoLog);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      if (this.fade <= 0) {
+      if (this.crossFade <= 0) {
         this.layers = this.pendingLayers;
         this.pendingLayers = null;
       }
+    }
+    if (this.fade < 1) {
+      gl.blendFunc(gl.ONE_MINUS_CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
+      gl.blendColor(1, 1, 1, this.fade);
+      if (this.blackProgram.checkReady())
+        this.blackProgram.draw();
+      gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     }
   }
 }

@@ -5,7 +5,7 @@ export default class Canvas {
     const glOpts = {
       alpha: false,
       antialias: false,
-      powerPreference: 'high-performance'
+      powerPreference: 'low-power',//'high-performance'
     };
     // this.gl = canvasEl.getContext('webgl2', glOpts);
     this.webglVersion = '1';

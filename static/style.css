@@ -85,9 +85,9 @@ body.program #controls {
 
 .desk > div {
   border: 2px solid white;
-  margin: 1em;
-  height: calc((50vw - 2vw)/(16/9));
-  width: calc(50vw - 2em - 4px);
+  margin: 0.5em;
+  height: calc((100vw / 3 - 2vw)/(16/9));
+  width: calc(100vw / 3 - 1em - 4px);
   display: flex;
 }
 

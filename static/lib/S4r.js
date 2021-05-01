@@ -362,6 +362,12 @@ const compile = (gl, parseTree, globals) => {
       const: false,
       value: 'u_freq',
     }); }}],
+    u_fast_freq: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'sampler2d',
+      const: false,
+      value: 'u_fast_freq',
+    }); }}],
     u_smooth_freq: [{ type: 'native', fn: stack => { stack.push({
       type: 'symbol',
       dataType: 'sampler2d',
@@ -540,6 +546,19 @@ const compile = (gl, parseTree, globals) => {
         });
         stack.push({ type: "symbol", dataType: "float", const: false, value: u_name });
       }
+    }}],
+    fsf: [{ type: 'native', fn: stack => {
+      const textureID = texture_seq++;
+      tasks.push({
+        type: 'set_uniform',
+        name: 'u_fast_freq',
+        valueType: 'sampler2D',
+        value: {
+          get tex() { return globals.fastFreqTex; },
+          draw() {},
+        }
+      });
+      doOps(parse(`2 pow 0 vec2 u_fast_freq swap texture2D .x`));
     }}],
     ssf: [{ type: 'native', fn: stack => {
       const textureID = texture_seq++;
@@ -1102,6 +1121,9 @@ export default class S4r {
     this.globals = {
       get freqTex() {
         return ctx.medFFT.tex;
+      },
+      get fastFreqTex() {
+        return ctx.fastFFT.tex;
       },
       get smoothFreqTex() {
         return ctx.slowFFT.tex;

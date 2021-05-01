@@ -39,6 +39,7 @@ export default class Desk {
     el.classList.add('desk');
 
     this.programOutput = new ProgramOutput(ctx);
+    this.layers = [];
     this.outputs = [this.programOutput];
     this.pendingOutputs = [];
     this.renderEls = [];
@@ -53,13 +54,12 @@ export default class Desk {
     ctx.show.addObserver(layers => this.showChanged(layers));
   }
   handleControllerEvent(k, v) {
-    console.log(this.faders, k, v);
     if (this.faders[k])
       this.faders[k].value = v;
   }
   showChanged(layers) {
-    this.outputs.length = 1;
-    this.outputs.push(...layers.map(layer => layer.instance));
+    this.layers.length = 0;
+    this.layers.push(...layers.map(layer => layer.instance));
     this.buildDOM();
   }
   buildDOM() {
@@ -67,9 +67,10 @@ export default class Desk {
     this.faders.length = 0;
     while (this.el.firstChild)
       this.el.removeChild(this.el.firstChild);
-    for (let i = 0; i < this.outputs.length; i++) {
+    const previews = this.layers.concat(this.outputs);
+    for (let i = 0; i < previews.length; i++) {
       const ii = i;
-      const prog = this.outputs[i];
+      const prog = previews[i];
       const el = document.createElement('div');
       if (prog == this.programOutput)
         el.classList.add('program');
@@ -78,21 +79,28 @@ export default class Desk {
       el.appendChild(renderZone);
       const fader = new Fader();
       fader.onchange = v => {
-        this.ctx.show.setFade(ii-1, v);
-        this.controller.setFader(ii, v);
+        if (ii == 0)
+          this.programOutput.fade = v;
+        else
+          this.ctx.show.setFade(ii-1, v);
+        this.controller.bank;
+        this.controller.banks[0].faders[ii] = v;
+        this.controller.sendBank();
       };
       this.faders.push(fader);
       el.appendChild(fader.el);
       this.renderEls.push(renderZone);
       this.el.appendChild(el);
+      fader.value = prog.fade;
     }
   }
   draw() {
     const canvas = this.ctx.canvas.canvasEl;
     const gl = this.ctx.canvas.gl;
     this.error = null;
-    for (let i = 0; i < this.outputs.length; i++) {
-      const output = this.outputs[i];
+    const previews = this.layers.concat(this.outputs);
+    for (let i = 0; i < previews.length; i++) {
+      const output = previews[i];
       const el = this.renderEls[i];
       const rect = el.getBoundingClientRect();
       const widthMultiple = gl.drawingBufferWidth/canvas.clientWidth;

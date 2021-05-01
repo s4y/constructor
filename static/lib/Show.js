@@ -20,8 +20,9 @@ class ShowLayer {
 }
 
 export default class Show {
-  constructor(ctx, path) {
+  constructor(ctx, path, key) {
     this.ctx = ctx;
+    this.key = key;
     this.path = path;
     this.config = null;
     this.layerStates = [];
@@ -77,7 +78,7 @@ export default class Show {
       (o[layer.config.path] = layer, o), {});
     const config = new Function(text)();
     let anythingChanged = false;
-    this.layers = config.layers.map((layerConfig, i) => {
+    this.layers = config[this.key].map((layerConfig, i) => {
       if (typeof layerConfig == 'string')
         layerConfig = { path: layerConfig };
       const s = JSON.stringify(layerConfig);
