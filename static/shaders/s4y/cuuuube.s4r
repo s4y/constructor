@@ -1,0 +1,39 @@
+:def sdO {
+ 0 0 2 vec3 +
+ t 0.1 * rotY 0.2 rotX * transform
+ dup .y unbal sf 2 pow rotY transform
+ =boxP
+ boxP dup 0.2 vec3.1 sdBox vec4.2
+ }
+ 
+PI 1.5 / aspect 0.1 10 perspectiveProj inverse =invProj
+p invProj transform =dir
+
+:def project dir * p invProj transform +
+
+0 0 0 0 vec4
+:loop 80
+ { .w dup project sdO =r r .w 0 max + r .xyz swap vec4.2 }
+dup
+.w =dist
+.xyz =boxP
+
+dist project =hitP
+
+hitP sdO .w =surfDist
+
+{
+:def sd sdO .w
+hitP estimateNormal
+} =norm
+0.5 =bri
+
+norm 0 1 0.5 vec3 dot 
+=l
+
+1 0 l hsv
+
+20 10 dist smoothstep *
+1 1024 / 0 surfDist smoothstep *
+
+draw

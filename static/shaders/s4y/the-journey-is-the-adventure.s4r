@@ -1,0 +1,17 @@
+
+fitp
+
+0 =yee
+
+:def step
+  p 0.1 t 0.1 * +  rotZ transform =p
+  yee 1 + =yee
+  p .x abs p .y abs + 1.0 * 1 mod sf 1.5 * -
+
+0
+step
+step
+step
+step
+
+1 mod vec4.1 draw

@@ -1,0 +1,26 @@
+
+fitp
+
+p .x abs p .y abs + sf
+
+vec4.1 draw
+
+bail
+
+# p 1 / =p
+
+cdist
+p .x 20 * t + +
+p .x sin p .x t + sin + +
+p .y abs /
+sin unbal 0 1 clamp 10 pow inv
+inv
+p .x abs 4 / ssf 1 1 hsv *
+
+{
+p .x t tan + 0 0 vec3 p + =p
+fb'f uv tex 0.9 * +
+}
+drawto'f
+
+fb'f uv tex draw

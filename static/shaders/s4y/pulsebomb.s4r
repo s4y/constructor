@@ -1,0 +1,43 @@
+{
+fitp
+
+:def step { =in
+  cdist 0.05 t * - in 0.3 mod + 6 * sin angle 0.5 PI * + sin in sin fsf 0.1 * + 2 * +
+ }
+
+0
+:loop 1
+ step dup sin unbal sf 1 *
+=y
+
+y 0.1 * t 0.01 * + 0.2 sf y sin unbal hsv
+# 0.6 0 cdist smoothstep *
+}
+
+{
+p 1.01 0.02 sf 2 pow - 1 1 vec3 * =p
+# p 0.1 t 0.1 * sin * rotZ transform =p
+fb'f uv tex 0.95 * blend
+}
+drawto'f
+
+:def bg
+ fb'f uv tex
+
+
+
+{
+# fitp
+bg
+p .y sf 1 swap - 1 1 vec3 p * =p
+# 0.4 0.2 sf 4 pow + 0.39 { fitp cdist } smoothstep *
+{
+p 0.98 * =p
+fb'ff uv tex 0.4 * blend
+}
+drawto'ff
+}
+
+fb'ff uv tex =col
+col col .r col .g max col .b max *
+draw

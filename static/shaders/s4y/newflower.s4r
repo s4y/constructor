@@ -1,0 +1,11 @@
+fitp
+{
+p .y abs sf 0 0 vec3 p * =p
+cdist 0.5 +
+}
+5 pow
+0 1 clamp
+0.8 *
+0.1 + 7 pow
+p .y unbal sf 1 1 hsv *
+draw

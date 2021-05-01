@@ -1,0 +1,34 @@
+:def spkr
+  # 0.1 sf 2 pow 0 3 / 1 1 hsv *
+  # 0.4 sf 2 pow 1 3 / 1 1 hsv * +
+  # 0.6 sf 2 pow 2 3 / 1 1 hsv * + 
+
+  {
+  =rot
+  p rot rotZ transform =p
+  p .y abs sf =fr
+  # 1 =fr
+  p .y sf 0.2 * t 0.01 * + 1 1 hsv 0.3 0.5 fr smoothstep *
+  0.5 1 cdist smoothstep *
+  }
+
+  cdist 1 step * draw
+
+{
+  p
+  0.752 0.002 0 vec3 +
+  .093 /
+  -0.01 rotZ 0.3 rotY -0.0 rotX * * transform
+  =p
+  fitp
+  t -1 * sin 11 pow abs 0 1 clamp spkr
+}
+
+{
+  p -0.658 0.001 0 vec3 +
+  0.09 /
+  -0.05 rotZ 0.4 rotY 0 rotX * * transform
+  =p
+  fitp
+  t 1 * sin 11 pow abs 0 1 clamp spkr
+}

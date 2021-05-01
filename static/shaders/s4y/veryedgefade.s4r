@@ -1,0 +1,7 @@
+0 0 0 1 vec4
+
+0.7 1 p .y abs smoothstep
+0.8 1 p .x abs smoothstep
+max *
+
+draw

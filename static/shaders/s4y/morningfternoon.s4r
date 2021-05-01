@@ -1,0 +1,11 @@
+p .y unbal 2 pow
+0.8 1 1 hsv *
+
+p .x 10 * t + sin unbal
+p .x 33 * t - sin unbal +
+0.1 sf *
+0 1 clamp
+*
+
+
+draw

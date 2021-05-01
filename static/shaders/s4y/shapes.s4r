@@ -1,0 +1,42 @@
+:def sqr
+ p .x abs p .y abs max inv 1.6 * 0 1 clamp 2 pow inv 0.1 / # 0.1 mod 0.1 /
+
+
+:def outline { =x 0.2 0.15 0.9 x - abs smoothstep }
+
+fitp
+
+p 1.5 / =p
+
+{
+p t 0.1 * t 10 / sin abs 10 pow 10 * + rotZ transform =p
+sqr
+=s
+
+
+0 0 0 s 1.0 step inv vec4
+
+s outline
+# p .y sf 1 1 hsv *
+
+{ 
+:def yeet p 0.1 rotZ transform =p sqr outline max
+# yeet yeet yeet yeet yeet
+} 
+
+max
+}
+
+draw
+
+bail
+
+:def tri
+ p .x 1.5 * abs p .y + p .y -1 * max
+
+:def sqr
+ p .x abs p .y abs max
+
+:def circ
+ p .xy 0 0 vec2 distance
+

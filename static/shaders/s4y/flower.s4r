@@ -1,0 +1,26 @@
+0.5 fftsmooth
+
+:def tweak
+:def flower
+ angle cdist t 0.11 * + sin 1 * +
+ + 5 * sin 3 / tweak
+ cdist inv + sin unbal
+ t 0.01 * +
+ PI 3 * * sin unbal
+
+{
+fitp
+
+{
+# :def tweak dup sf inv 0.5 * 0.2 + *
+0
+:loop 10 flower dup sin unbal sf 4 pow +
+}
+=bri
+
+
+t 0.01 * 1.0 bri 10 / sf 0.1 + 4 pow hsv
+bri 0 1 clamp *
+cdist 0.2 sf 4 * pow inv *
+draw
+

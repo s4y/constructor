@@ -1,0 +1,40 @@
+0 1 1 hsv =c
+
+0.22 4 / =size_ear 
+
+:def sdEar { =p size_ear =ra 0.01 =rb 0.005 =h
+ p 0 p .x 10 / 0 vec3 + =p
+ p .xy length 2 ra * - rb + p .z abs h - vec2 =d
+ d .x d .y max 0 min d 0 max length + rb -
+ }
+
+:def sd {
+  0 0 -2 vec3 +
+  t rotY transform =p
+  p 0.98 1.05 1 vec3 * 0.27 2 / -0.135 0 vec3 + =le
+  p -0.98 1.05 1 vec3 * 0.27 2 / -0.135 0 vec3 + =re
+  # le -1 1 1 vec3 * =re
+  p 0.115 sdSphere
+  le sdEar min
+  # re sdEar min
+  }
+
+0 0 1 vec3 =dir
+:def project dir * p +
+:def march project sd
+
+{
+fitp
+p 4 / =p
+0
+:loop 40
+  dup march +
+=dist
+dist project =hitP
+hitP estimateNormal =norm
+
+dist
+c norm 0 1 0 vec3 dot 0.3 1 clamp *
+dist 10 step *
+}
+draw

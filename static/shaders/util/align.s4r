@@ -1,0 +1,14 @@
+p 2 * =p
+p 1 + =p
+p 1 + 2 mod 1 - =p
+
+{ fitp p } =fp
+
+fp .xy 0 0 vec2 distance 1 - abs 16 dims .x / step
+p .x abs 8 dims .x / step max
+p .y abs 8 dims .y / step max
+fp .x 0.05 mod 4 dims .x / step max
+fp .y 0.05 mod 4 dims .y / step max
+
+vec4.1
+draw

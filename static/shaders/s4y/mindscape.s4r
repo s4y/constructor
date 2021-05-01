@@ -1,0 +1,23 @@
+PI 1.5 / aspect 0.1 10 perspectiveProj inverse =invProj
+p invProj transform =dir
+
+:def project dir * p +
+
+:def sd { =p
+ p .y abs 0.4 +
+ p .x 5 * t 1 * + sin 0.2 * + p .z 10.9 + - inv
+ }
+
+0
+:loop 40
+  dup project sd +
+=dist
+
+dist project =hitP
+hitP sd =surfDist
+
+hitP estimateNormal =norm
+
+norm 1 mod abs 1 vec4.2
+dist 10 step *
+draw

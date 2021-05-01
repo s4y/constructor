@@ -1,0 +1,45 @@
+:def sdInfiniteCylinder { =c =p
+ p .xz c .xy - length c .z -
+ }
+
+:def sd
+ 0 0 -2 vec3 +
+ t 0.01 * rotY t 0.04 * rotX * transform
+ =bp
+ 0.6 =big #0.5 sf 0.5 * + =big
+ bp big vec3.1 0.05 bp .x bp .y max bp .z min unbal 2 / sf * sdBoundingBox
+ bp big sdSphere min
+ bp 0.01 vec3.1 sdInfiniteCylinder min
+ 2 /
+
+0 0 1 vec3 =dir
+:def project dir * p +
+
+{
+fitp
+0
+:loop 80
+ dup project sd 0 max +
+=dist
+
+dist project estimateNormal =norm
+
+{ norm 1 * p + =p
+0
+:loop 10 angle
+ cdist t 0.11 * + sin 1 * +
+ + 5 * sin 3 /
+ cdist inv + sin unbal
+ t 0.01 * +
+ PI 3 * * sin unbal
+1 pow
+# 0.1 sf 2 pow 0.5 * 0.5 + *
+} =bri
+
+
+norm 0 1 -1 vec3 dot 
+bri vec3.1 1 vec4.2 *
+dist 10 step *
+}
+
+draw

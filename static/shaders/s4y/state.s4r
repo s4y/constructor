@@ -1,0 +1,21 @@
+
+
+angle midi'knob0 + 1 mod sf =f
+#f f midi'knob3 + 1 1 hsv
+f inv 0.5 step vec4.1
+{ 
+0 midi'knob0 -2 * 0 vec3 p + =p
+fitp cdist 0.3 step } =which
+which *
+
+{
+p 0 1 dims .y / 2 * 0 vec3 + =p
+1 midi'knob1 0.1 * - p * =p
+p 0.2 sf midi'knob2 * rotZ transform =p
+fb'f uv tex which inv * 0.99 * +
+}
+
+drawto'f
+
+
+fb'f uv tex draw

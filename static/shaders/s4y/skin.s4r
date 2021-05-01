@@ -1,0 +1,36 @@
+:def sdSkin {
+ 0.1 vec3.1 sdBox
+ }
+ 
+PI 1.5 / aspect 0.1 10 perspectiveProj inverse =invProj
+p invProj transform =dir
+
+:def project dir * p invProj transform +
+
+0 0
+:loop 80
+ project sdSkin 0 max +
+=dist
+
+dist vec4.1 draw
+
+bail
+dist project =hitP
+
+hitP sdO .w =surfDist
+
+{
+:def sd sdSkin
+hitP estimateNormal
+} =norm
+0.5 =bri
+
+norm 0 1 0.5 vec3 dot 
+=l
+
+1 0 l hsv
+
+20 10 dist smoothstep *
+1 1024 / 0 surfDist smoothstep *
+
+draw

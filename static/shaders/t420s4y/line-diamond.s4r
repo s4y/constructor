@@ -1,0 +1,14 @@
+
+# fitp
+
+:def step
+  p 0.3 rotX transform =p
+  p .x abs p .y abs + 2.0 * inv 1.0 pow inv sf 1.5 * -
+
+0
+step
+step
+step
+step
+
+1 mod vec4.1 draw

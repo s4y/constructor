@@ -4,7 +4,7 @@
 
 black
 
-0.5 fftsmooth
+0.0 fftsmooth
 
 {
 
@@ -23,4 +23,7 @@ drawto'f
 
 }
 
-fb'f p .xy unbal tex draw
+fb'f p .xy unbal tex
+cdist smoothstep *
+0.2 *
+draw

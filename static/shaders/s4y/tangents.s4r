@@ -1,0 +1,43 @@
+{
+fitp
+# p 1.5 * =p
+
+# t 0.1 * =t
+
+:def step { =n
+ p n 3 * t n * + n t + -1.8 * 0 vec3 n + sin 0.04 * + length
+ dup 10 / sf 0.4 * 1 - abs *
+ # yee sf 1 * -
+ =l
+ l n + 10 / 0.5 l 3 * 0 2 clamp sin 50 pow hsv
+ }
+
+0
+1 step 1.4 step - +
+2 step 2.4 step - +
+4 step 4.4 step - +
+5 step 5.4 step - +
+# 1 step 1.1 step -
+# 1 step 1.1 step -
+# 1 step 1.1 step -
+# 1.1 step -
+# 2 step 2.1 step - +
+# step -
+# step -
+# step -
+# =l
+
+# l cos unbal 5 / 0.5 l sin 0 1 clamp hsv
+
+}
+
+draw
+bail
+
+{
+p 1 .01 - * =p
+fb'f uv tex 0.6 0.1 sf 0.4 * + * +
+}
+drawto'f
+
+fb'f uv tex draw
