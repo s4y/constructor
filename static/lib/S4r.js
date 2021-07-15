@@ -1132,7 +1132,7 @@ export default class S4r {
         return ctx.now();
       },
       midi: ctx.midi,
-      framebuffers: {},
+      framebuffers: { ...ctx.textures, },
       old,
     }
 

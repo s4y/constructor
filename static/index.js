@@ -120,6 +120,55 @@ const makeFFT = (smoothing, size, how) => {
   }
 };
 
+const makeVideoTexture = () => {
+  const { gl } = canvas;
+  const video = document.createElement('video');
+  video.muted = false;
+
+  let lastUpdate = null;
+  const tex = gl.createTexture();
+  gl.bindTexture(gl.TEXTURE_2D, tex);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, canvas.gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, canvas.gl.LINEAR);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+  gl.texImage2D(
+    gl.TEXTURE_2D, 0, gl.LUMINANCE,
+    128, 128, 0,
+    gl.LUMINANCE, gl.UNSIGNED_BYTE, null
+  );
+
+  const ensureCurrent = () => {
+    const now = Date.now();
+    if (lastUpdate == now)
+      return;
+    lastUpdate = now;
+    if (!video.videoWidth || !video.videoHeight)
+      return;
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.RGB, gl.RGB,
+      gl.UNSIGNED_BYTE, video
+    );
+  };
+
+  return {
+    video,
+    get w() { return video.videoWidth; },
+    get h() { return video.videoHeight; },
+    draw() {
+      ensureCurrent();
+    },
+    get tex() {
+      return tex;
+    },
+    load(src) {
+      video.src = src;
+      video.load();
+    },
+  }
+};
+
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const mixer = ac.createGain();
 const kMaxFrequency = 15000;
@@ -141,6 +190,9 @@ if (navigator.mediaDevices) {
 let tBase = sessionStorage.tBase || 0;
 const ctx = {
   canvas, fastFFT, medFFT, slowFFT,
+  textures: {
+    video1: makeVideoTexture(),
+  },
   events: new Observers(),
   now: () => (Date.now()/1000 - tBase) % ((1 << 15) - (1 << 14)),
   midi: new Proxy({}, {
@@ -268,3 +320,25 @@ ctx.events.add(new Context(), 'midi', (k, v) => {
     args: [ctx.midi.knob15],
   }});
 });
+
+ctx.events.add(new Context(), 'video.load', (k, src) => {
+  ctx.textures[k].load('/videos/' + src);
+});
+
+ctx.events.add(new Context(), 'video.seek', (k, time) => {
+  ctx.textures[k].video.currentTime = time;
+});
+
+ctx.events.add(new Context(), 'video.play', (k) => {
+  ctx.textures[k].video.play();
+});
+
+ctx.events.add(new Context(), 'video.pause', (k) => {
+  ctx.textures[k].video.pause();
+});
+
+window.cmd = (name, ...args) => {
+  reserve.broadcast({ type: 'event', value: {
+    name, args,
+  }});
+};
