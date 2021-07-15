@@ -1,6 +1,6 @@
 // import HotFile from '/lib/HotFile.js'
 
-const createFB = (gl, w, h, name) => {
+const createFB = (gl, w, h) => {
   const tex = gl.createTexture();
   gl.bindTexture(gl.TEXTURE_2D, tex);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
@@ -19,7 +19,6 @@ const createFB = (gl, w, h, name) => {
   const ret = {
     tex,
     fb,
-    name,
     w: 0,
     h: 0,
     aspect() { return this.w / this.h },
@@ -69,7 +68,7 @@ const createFB = (gl, w, h, name) => {
 }
 
 const createFBPair = (gl, w, h, copyFrom) => {
-  const fbs = [createFB(gl, w, h, 'alfalfa'), createFB(gl, w, h, 'bravado')];
+  const fbs = [createFB(gl, w, h), createFB(gl, w, h)];
   return {
     get w() { return fbs[0].w },
     get h() { return fbs[0].h }, 
