@@ -8,7 +8,7 @@ A platform for live shader performance. Key features:
 - Supports s4r (a stack-based metalanguage for writing shaders) and GLSL
 - Audio FFT available to shaders
 - Changes to shaders are loaded on the fly
-- Changes aren't visible to the audience until you click the "take" button (and errors won't be sent to the audience at all).
+- Changes aren't visible to the audience until you click the "take" button (and errors won't be sent to the audience at all)
 - MIDI controller input
 - Any number of outputs through any number of computers (which don't have to be your workstation!)
 
