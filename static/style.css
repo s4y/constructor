@@ -1,8 +1,12 @@
+html {
+  --border-color: #aaa;
+}
+
 body {
   background: black;
   color: white;
   margin: 0;
-  font: 16px system-ui, sans-serif;
+  font: 18px system-ui, sans-serif;
   overflow: auto;
 }
 
@@ -23,16 +27,47 @@ body.program:fullscreen {
   position: fixed;
   bottom: 0;
   right: 0;
-  padding: 0.5em;
+  left: 0;
+  display: flex;
+  justify-content: flex-end;
+  border-top: 1px solid var(--border-color);
+  background: #111;
 }
 
 body.program #controls {
   display: none;
 }
 
+#controls button {
+  font: inherit;
+  background: #333;
+  border: none;
+  background: none;
+  color: inherit;
+  padding: 0.5em 0.75em;
+  margin: 0;
+  display: block;
+  border: 1px solid var(--border-color);
+  margin-right: -1px;
+  border-width: 0 1px 0 1px;
+}
+
+#controls button:focus {
+  /* background: #393939; */
+  outline: none;
+}
+
+#controls button:active {
+  background: #fff;
+  color: black;
+  outline: none;
+}
+
+#controls button:not(:last-child) {
+}
+
 #errorZone {
   position: fixed;
-  bottom: 0;
   background: rgba(255, 0, 0, 0.5);
   font-family: monospace;
   left: 0;

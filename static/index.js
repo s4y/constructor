@@ -19,6 +19,8 @@ import Canvas from '/lib/Canvas.js'
 import Show from '/lib/Show.js'
 import Desk from './lib/Desk.js'
 import ProgramOutput from './lib/ProgramOutput.js'
+import Context from './lib/Context.js'
+import Observers from './lib/Observers.js'
 
 const canvas = new Canvas(outputEl);
 window.addEventListener('resize', () => canvas.resize());
@@ -139,6 +141,7 @@ if (navigator.mediaDevices) {
 let tBase = sessionStorage.tBase || 0;
 const ctx = {
   canvas, fastFFT, medFFT, slowFFT,
+  events: new Observers(),
   now: () => (Date.now()/1000 - tBase) % ((1 << 15) - (1 << 14)),
   midi: new Proxy({}, {
     get(obj, k) {
@@ -223,11 +226,19 @@ document.body.addEventListener('click', e => {
 window.addEventListener('broadcast', e => {
   const { type, value } = e.detail;
   if (type == 'midi') {
-    for (const k in value)
+    for (const k in value) {
       ctx.midi[k] = value[k];
+      ctx.events.fire('midi', k, value[k]);
+    }
   } else if (type == 'timeBase') {
     tBase = value;
     sessionStorage.tBase = value;
+  } else if (type == 'event') {
+    const { name, args } = value;
+    ctx.events.fire(name, ...args);
+  } else if (type == 'state') {
+    ctx.state = value;
+    ctx.events.fire('state');
   }
 });
 
@@ -235,3 +246,25 @@ resetTime.addEventListener('click', e => {
   reserve.broadcast({ type: 'timeBase', value: Date.now() / 1000 });
 });
 
+take.addEventListener('click', e => {
+  reserve.broadcast({ type: 'event', value: {
+    name: 'take',
+    args: [],
+  }});
+});
+
+take.addEventListener('click', e => {
+  reserve.broadcast({ type: 'event', value: {
+    name: 'take',
+    args: [0.2],
+  }});
+});
+
+ctx.events.add(new Context(), 'midi', (k, v) => {
+  if (k != 'note15' || v != true)
+    return;
+  reserve.broadcast({ type: 'event', value: {
+    name: 'take',
+    args: [ctx.midi.knob15],
+  }});
+});

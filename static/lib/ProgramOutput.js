@@ -1,9 +1,11 @@
 import Framebuffer from '/lib/Framebuffer.js'
 import ShaderProgram from '/lib/ShaderProgram.js'
+import Context from '/lib/Context.js'
 
 export default class ProgramOutput {
-  constructor(ctx) {
+  constructor(ctx, autoTake) {
     this.ctx = ctx;
+    this.autoTake = autoTake;
     this.fade = 1;
     this.el = document.createElement('div');
     this.layers = [];
@@ -22,12 +24,23 @@ export default class ProgramOutput {
         this.showChanged(layers);
       // }, 0);
     });
+
+    ctx.events.add(new Context(), 'take', speed => {
+      this.doTake = true;
+      if (speed == null)
+        this.takeSpeed = 0.04;
+      else if (speed == 0)
+        this.takeSpeed = 1;
+      else
+        this.takeSpeed = 1/(10*60*speed);
+    });
   }
   showChanged(layers) {
     // console.log('show changed');
     if (this.layers.length) {
       this.pendingLayers = layers.slice();
       this.crossFade = 1;
+      this.doTake = this.autoTake;
     } else {
       this.layers = layers;
     }
@@ -84,6 +97,8 @@ export default class ProgramOutput {
     if (this.fade == 0)
       return;
     let pendingLayersReady = (() => {
+      if (!this.doTake)
+        return false;
       if (!this.pendingLayers)
         return false;
       for (const layer of this.pendingLayers) {
@@ -111,7 +126,7 @@ export default class ProgramOutput {
       this.drawLayer(layer.instance);
     }
     if (this.pendingLayers && pendingLayersReady) {
-      this.crossFade -= 0.04;
+      this.crossFade -= this.takeSpeed;
       this.fadeFb.drawInto(() => {
         for (const layer of this.pendingLayers)
           layer.instance.draw();

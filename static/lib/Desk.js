@@ -38,7 +38,7 @@ export default class Desk {
     const el = this.el = document.createElement('div');
     el.classList.add('desk');
 
-    this.programOutput = new ProgramOutput(ctx);
+    this.programOutput = new ProgramOutput(ctx, true);
     this.layers = [];
     this.outputs = [this.programOutput];
     this.pendingOutputs = [];
