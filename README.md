@@ -4,15 +4,15 @@
 
 A platform for live shader performance. Key features:
 
-- UI and rendering are 100% web-based.
-- Supports s4r (a stack-based metalanguage for writing shaders), 
+- UI and rendering are 100% web-based
+- Supports s4r (a stack-based metalanguage for writing shaders) and GLSL
 - Audio FFT available to shaders
-- Changes to shaders are loaded on the fly.
-- Changes are only visible to you until you send them to the audience with the "take" button.
+- Changes to shaders are loaded on the fly
+- Changes are only visible to you until you send them to the audience with the "take" button
 - MIDI controller input
-- Any number of outputs via any number of computers (which don't have to be the same as yours!)
+- Any number of outputs through any number of computers (which don't have to be your workstation!)
 
-Documentation is limited right now because I'm mainly making this for myself.
+Documentation is lacking because I'm mainly making this for myself.
 
 ## Running
 
