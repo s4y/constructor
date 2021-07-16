@@ -16,7 +16,6 @@ const qs = location.search
   .reduce((params, [k, v]) => (params[k] = v, params), {});
 
 import Canvas from '/lib/Canvas.js'
-import Show from '/lib/Show.js'
 import Desk from './lib/Desk.js'
 import ProgramOutput from './lib/ProgramOutput.js'
 import Context from './lib/Context.js'
@@ -205,7 +204,8 @@ ctx.lowpass = makeFilteredSampler('lowpass');
 ctx.highpass = makeFilteredSampler('highpass');
 ctx.bandpass = makeFilteredSampler('bandpass');
 ctx.notch = makeFilteredSampler('notch');
-ctx.show = new Show(ctx, '/show.js', qs.program || 'default');
+ctx.showFile = '/show.js';
+ctx.showTag = qs.program || 'default';
 
 const renderer = new (('program' in qs) ? ProgramOutput : Desk)(ctx);
 if (renderer.el)

@@ -1,6 +1,7 @@
 import XTouchController from '/lib/XTouchController.js'
 import ProgramOutput from '/lib/ProgramOutput.js'
 import S4r from '/lib/S4r.js'
+import Show from '/lib/Show.js'
 
 class Fader {
   constructor() {
@@ -51,7 +52,8 @@ export default class Desk {
       'shaders/util/grid.s4r',
     ]);
 
-    ctx.show.addObserver(layers => this.showChanged(layers));
+    this.show = new Show(ctx);
+    this.show.addObserver(layers => this.showChanged(layers));
   }
   handleControllerEvent(k, v) {
     if (this.faders[k])
@@ -82,7 +84,7 @@ export default class Desk {
         if (ii == 0)
           this.programOutput.fade = v;
         else
-          this.ctx.show.setFade(ii-1, v);
+          this.show.setFade(ii-1, v);
         this.controller.bank;
         this.controller.banks[0].faders[ii] = v;
         this.controller.sendBank();

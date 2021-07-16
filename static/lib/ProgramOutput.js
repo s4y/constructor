@@ -1,6 +1,7 @@
 import Framebuffer from '/lib/Framebuffer.js'
 import ShaderProgram from '/lib/ShaderProgram.js'
 import Context from '/lib/Context.js'
+import Show from '/lib/Show.js'
 
 export default class ProgramOutput {
   constructor(ctx, autoTake) {
@@ -19,7 +20,8 @@ export default class ProgramOutput {
     this.fadeFb = new Framebuffer(ctx.canvas.gl);
     this.copyProgram.uniforms.buf = this.fadeFb.tex;
 
-    ctx.show.addObserver(layers => {
+    this.show = new Show(ctx);
+    this.show.addObserver(layers => {
       // setTimeout(() => {
         this.showChanged(layers);
       // }, 0);

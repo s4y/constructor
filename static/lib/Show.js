@@ -20,10 +20,10 @@ class ShowLayer {
 }
 
 export default class Show {
-  constructor(ctx, path, key) {
+  constructor(ctx) {
     this.ctx = ctx;
-    this.key = key;
-    this.path = path;
+    this.key = ctx.showTag;
+    this.path = ctx.showFile;
     this.config = null;
     this.layerStates = [];
     this.layers = [];
@@ -32,7 +32,7 @@ export default class Show {
 
     window.addEventListener('sourcechange', e => {
       const changedPath = new URL(e.detail, location).pathname;
-      if (changedPath == path) {
+      if (changedPath == this.path) {
         e.preventDefault();
         this.init();
         return;
