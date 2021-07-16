@@ -211,8 +211,12 @@ const renderer = new (('program' in qs) ? ProgramOutput : Desk)(ctx);
 if (renderer.el)
   main.appendChild(renderer.el);
 
-if ('program' in qs)
+if ('program' in qs) {
   document.body.classList.add('program');
+  document.body.addEventListener('click', e => {
+    document.body.webkitRequestFullscreen();
+  });
+}
 
 // if ('program' in qs) {
 // canvas.heightOffset = 266;
