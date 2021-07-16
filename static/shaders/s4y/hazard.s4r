@@ -1,0 +1,45 @@
+:def ss { =b =a =x a b x smoothstep }
+
+:def smod { =fade =by =x x by mod fade by - x by mod + 0 max fade / - }
+
+# p .x 1 * 0.4 0.1 smod
+# vec4.1 2 *
+# draw
+# bail
+
+:def radiate
+ cdist dup 0.6 mod -
+ angle + =angle
+ cdist t - 0.05 ssf - 0.8 mod =cdist
+:def hazard
+ cdist
+ angle PI / 2 / 0.25 + 3 * PI * 2 * which ssf 4 * which 0 step inv * 0.5 * 1 + / sin unbal max
+ 0.59 0.5 ss
+
+{
+
+fitp
+p 10 * =p
+cdist dup 0.6 3 / mod - =which
+{
+p t 1.9 * which 900 * PI / 2 / cos 2 * * rotZ transform =p
+radiate
+hazard
+}
+
+
+
+=yee
+
+0.1 fsf 4 pow =flash
+
+which -60 / 0.7 0.9 flash + hsv yee *
+1 1 1 0.9 vec4 *
+}
+
+{ fitp cdist 1 0.2 ss * }
+{ p 1.01 0.1 sf 4 pow 0.02 * - * =p fb'f uv tex } 0.95 * blend
+drawto'f
+
+fb'f uv tex
+draw

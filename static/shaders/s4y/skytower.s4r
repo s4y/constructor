@@ -1,0 +1,22 @@
+:def sd { =p
+ p 0 0 t vec3 + =p
+ p .y abs 0.7 - -1 * p .z 0.1 *
+ sin 0.1 * +
+ p .xy 5 * p .zy 2 * sin * cos 0.1 * length +
+ }
+
+
+0 0 1 vec3 =dir
+PI 1.5 / aspect 0.3 10 perspectiveProj inverse =trns
+:def project dir * p trns transform +
+
+{
+0
+:loop 60
+ dup project sd 0 max +
+=dist
+
+dist project estimateNormal =norm
+
+dist 10 mod inv vec4.1
+draw

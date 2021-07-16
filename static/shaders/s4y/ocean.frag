@@ -5,7 +5,7 @@ uniform float u_rot_y;
 uniform float u_rot_z;
 uniform float u_head_glow;
 uniform float u_sea_hue;
-uniform float u_sea_hue_amt;
+float u_sea_hue_amt = 0.2;
 uniform float u_mouth_decoration;
 uniform float u_mouth_decoration_style;
 uniform float u_mouth_sea;
@@ -31,6 +31,21 @@ float activity;
 float beat;
 float aspect;
 mat4 inv_proj_mat;
+
+float sdOctahedron( vec3 p, float s)
+{
+  p = abs(p);
+  float m = p.x+p.y+p.z-s;
+  vec3 q;
+       if( 3.0*p.x < m ) q = p.xyz;
+  else if( 3.0*p.y < m ) q = p.yzx;
+  else if( 3.0*p.z < m ) q = p.zxy;
+  else return m*0.57735027;
+    
+  float k = clamp(0.5*(q.z-q.y+s),0.0,s); 
+  return length(vec3(q.x,q.y-s+k,q.z-k)); 
+}
+
 
 vec3 applyTransform(mat4 t, vec3 p) {
   vec4 p4 = transpose(t) * vec4(p, 1.0);
@@ -104,40 +119,46 @@ float sdEye(vec3 p, out vec3 l_eye_pos) {
 
 HeadHit sdHead(vec3 p) {
   p.z += 2.;
-  p.z *= -1.;
+  // p.z *= -1.;
   p.y += 0.1;
-  p.xy *= 1. - pow(ssf01, 2.)*0.1;
+  p.xy *= 1. - pow(ssf01, 2.)*0.5;
+  // p.z += t * 1.1;
 
   p = ( rotX(-u_rot_x)
       * rotY(-u_rot_y)
       * rotZ(-u_rot_z)
       * vec4(p, 1)).xyz;
+  p.x *= 1. + sf(abs(p.y)/20.) * 0.5;
 
   float bob = pow(ssf03 - 0.1, 4.)*activity*(1.-pow(sin(beat*PI*2.)/2.+.5, 2.)*2.-0.5);
-  p = (rotX(bob*3.*u_bob_amount) * vec4(p, 1)).xyz;
-  p.y -= bob * 0.3 * u_bob_amount;
+  // p = (rotX(bob*3.*u_bob_amount) * vec4(p, 1)).xyz;
 
   HeadHit ret;
 
   // head
   float sndShift = 0.;//mix(0., (activity*0.5*sf(abs(p.x/20.))*ssf(0.2)), 0.);
-  ret.headDist = sdSphere(p, head_size);
-  ret.headDist = max(ret.headDist, -(rotX(-0.065 + sndShift) * vec4(p, 1.)).y);
-  ret.headDist = min(ret.headDist, max(sdSphere(p, head_size), (rotX(-1.35 + sndShift) * vec4(p, 1.)).y));
+  vec3 hp = p;
+  // hp.xy += 1.0;
+  // // if (hp.z > 1.)
+  //   hp = mod(hp + 1., 2.) - 1.;
+  hp = applyTransform(rotY(t * 0.1), hp);
+  ret.headDist = sdOctahedron(hp, 0.8);
+  // ret.headDist = max(ret.headDist, -(rotX(-0.065 + sndShift) * vec4(p, 1.)).y);
+  // ret.headDist = min(ret.headDist, max(sdSphere(p, head_size), (rotX(-1.35 + sndShift) * vec4(p, 1.)).y));
   ret.dist = ret.headDist;
 
   // mouth
-  ret.mouthDist = min(ret.dist, sdSphere(p, head_size - 0.06));
+  // ret.mouthDist = min(ret.dist, sdSphere(p, head_size - 0.06));
 
-  // ears
-  ret.earDist = min(sdEar(p), sdEar(p * vec3(-1,1,1)));
+  // // ears
+  // ret.earDist = min(sdEar(p), sdEar(p * vec3(-1,1,1)));
 
-  // eyes
-  ret.eyeDist = min(sdEye(p, ret.lEyePos), sdEye(p * vec3(-1,1,1), ret.rEyePos));
+  // // eyes
+  // ret.eyeDist = min(sdEye(p, ret.lEyePos), sdEye(p * vec3(-1,1,1), ret.rEyePos));
 
-  ret.dist = min(ret.dist, ret.mouthDist);
-  ret.dist = min(ret.dist, ret.earDist);
-  ret.dist = min(ret.dist, ret.eyeDist);
+  // ret.dist = min(ret.dist, ret.mouthDist);
+  // ret.dist = min(ret.dist, ret.earDist);
+  // ret.dist = min(ret.dist, ret.eyeDist);
   ret.p = p;
   return ret;
 }
@@ -152,8 +173,8 @@ SeaHit sdSea(vec3 p) {
   // p.x += cloudNoise((p - mod(p, PI*4.))).x * .4;
 
   p *= 2.;
-  p.z -= t * 0.5 - 2e3;
-  p.x += 2e4 + 0.5;
+  p.z -= t * 4.5 - 2e3;
+  p.x += 2e4 + 0.5 + t;
   p.y /= 2.;
 	vec3 bb = cos(p*0.01*sin(p.y*.05) + sin(p.zyx) * 1. + cloudNoise(p / 10.) * 0.1);
 
@@ -198,12 +219,13 @@ vec4 marchSea(vec3 p) {
   vec3 norm = estimateSeaNormal(hitP*vec3(1, 1, -0.2));
 
   vec4 color = vec4(0, 0, 0, 1);
-  color += hsv(u_sea_hue  + 0.07 + sf02 * u_sea_hue_amt, 1. * (1.-sf(hitP.z)*0.5), .5 * sf(abs(mod((hit.p.x+100.0)/100., 1.)))) * dot(hitP, normalize(vec3(0, 1, -2)));
+  color += hsv(u_sea_hue  - 0.1 + sf02 * u_sea_hue_amt, 1. * (1.-sf(hitP.z)*0.5), .5 * sf(abs(-mod((abs(hit.p.y))/100., 1.)))) * 0.5 * dot(hitP, normalize(vec3(0, 1, -2)));
   color += vec4(0, 0, 1, 1) * clamp(dot(hitP, normalize(vec3(0, -1, 0))), 0., 1.);
   return color;
 }
 
 vec4 bg(vec3 p) {
+  // return vec4(1.) * flower(p);
   return marchSea(p);
   float f = flower(p);
   return smoothstep(0.0, 0.1, f) * hsv(0.,1.,1.);
@@ -244,9 +266,9 @@ vec4 mouthColor(vec3 p, vec3 hitP, vec3 norm) {
 }
 
 vec4 marchHead(vec3 p) {
-  mat4 inv_proj_mat = scale(aspect, 1., 1.);
+  // mat4 inv_proj_mat = scale(aspect, 1., 1.);
 
-  vec3 dir = normalize(mix(applyTransform(inv_proj_mat, p), vec3(0, 0, -1), 1.));
+  vec3 dir = normalize(mix(applyTransform(inv_proj_mat, p), vec3(0, 0, -1), 0.));
   float aspect = u_resolution.x/u_resolution.y;
   float surfDist = 0.;
   float dist = 0.;
@@ -257,17 +279,21 @@ vec4 marchHead(vec3 p) {
     surfDist = hit.dist;
     dist += surfDist;
 
-    if (dist > 1e1)
+    if (dist > 1e2)
       break;
   }
 
-  float fl = flower(p);
-  vec4 bgColor = hsv(fl/1.*0.2+0.6+(beat-mod(beat,1.)+(pow(mod(beat,1.),2.)))*0.05, ssf(fl/100.)*0.2, fl);//marchSea(p) * activity;
-  bgColor = mix(bgColor, bgColor * fsf(0.3) + bg(p) * 0.5, ssf03);
-  bgColor.rgb *= activity;
+  if (dist > 1e2)
+    return vec4(0);
 
-  vec3 hitP = mix(applyTransform(inv_proj_mat, p), p * vec3(aspect,1,1), 1.-activity) + dir * dist;
+  float fl = flower(p);
+
+  vec3 hitP = mix(applyTransform(inv_proj_mat, p), p * vec3(aspect,1,1), 0.) + dir * dist;
   vec3 norm = estimateNormal(hitP);
+
+  vec4 mouthLight = .9 * marchSea(norm*2.+mix(p, hitP, 1.0)*1.+vec3(0,0.6,1)) + 0.1 * pow(clamp(dot(normalize(vec3(0, 0.5, 1.)), norm), 0., 1.), 1.);
+  return mouthLight * smoothstep(20., 10., dist) * 0.4;
+  return mouthLight * 0.2;
 
   vec4 baseColor = vec4(1.-activity,0,0,1);
   vec4 headColor = baseColor;
@@ -282,23 +308,22 @@ vec4 marchHead(vec3 p) {
   headColor += activity * amazHead * vec4(vec3(.3), 1) * clamp(pow(1.-norm.z + 0.1, 1.), 0., 1.);//pow(clamp(dot(norm, normalize(vec3(-2,1,-1.9)))+.9, 0., 1.), 7.);
   headColor += u_head_glow * activity * regHead * hsv(.65 + sf(abs(p.x)/2.)*0.5, 1., 1.) * clamp(pow(1.-norm.z + 0.1, 8.), 0., 1.) * pow(clamp(distance(hit.p.xy, vec2(0))+0.5,0.,1.), 10.);
   headColor.a = 1.-clamp(smoothstep(0., kEpsilon * (32. + 40. * (1.-activity)), surfDist), 0., 1.);
-  return headColor;
 }
 
 // out vec4 fragColor;
 #define fragColor gl_FragColor
 void main() {
-  sf02 = sf(0.2);
+  sf02 = fsf(0.2);
   sf03 = sf(0.3);
   ssf01 = ssf(0.1);
   ssf02 = ssf(0.2);
   ssf03 = ssf(0.3);
-  activity = smoothstep(u_activity_min, u_activity_max, ssf(0.02));
+  activity = 1.;//smoothstep(u_activity_min, u_activity_max, ssf(0.02));
   if (u_bpm > 0.)
     beat = t*(u_bpm/60.);
   aspect = u_resolution.x/u_resolution.y;
   inv_proj_mat = inverse(perspectiveProj(
-    PI/1.5, aspect, 0.1, 10.0
+    PI/1.5, aspect, 0.3, 10.0
   ));
   inv_proj_mat = inv_proj_mat * activity + scale(1., 1., 1.) * (1.-activity);
 
@@ -309,9 +334,9 @@ void main() {
   bgColor = bg(p) * 0.4;
   bgColor.rgb *= activity;
   fragColor = bgColor;
-  return;
 
+  return;
   vec4 headColor = marchHead(p);
 
-  fragColor = bgColor * (1.-headColor.a) + headColor * headColor.a;
+  fragColor = bgColor * (1.-headColor.a) + headColor;
 }

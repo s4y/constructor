@@ -1,0 +1,40 @@
+
+
+:fn smoothstep 3
+{
+fitp
+
+p 1 * 0.1 sf 1 pow 0.01 * inv * =p
+
+:def ring
+ 0.4 0 0.4 cdist - abs smoothstep
+
+
+0 0 vec2
+:loop 43
+ { =x
+ p x .y x .y 1 * + t 1 * sin 0.1 * x .x 1 mod sf * + rotZ transform 0.1 +
+ 0.13 x .x 0.1 * 1 mod sf 16 pow 0.1 * - + =p
+ ring x .x -
+ abs
+ # t x .x 1 + + 0.05 * sin 2 * 0.5 + + =p
+ x .y 1 +
+ t 0.000 * x .y 1 * sin cdist * 0.1 * * +
+ } vec2
+
+=ret
+
+ret .x 0.2 * t 0.01 * + 1 1 hsv ret .x abs *
+
+}
+
+# draw
+# bail
+
+{
+p 1 0.1 sf 2 pow 0.1 * - * =p
+fb'f uv tex 0.1 sf 10 pow * swap blend
+}
+drawto'f
+
+fb'f uv tex draw

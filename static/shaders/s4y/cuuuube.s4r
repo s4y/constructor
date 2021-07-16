@@ -3,7 +3,7 @@
  t 0.1 * rotY 0.2 rotX * transform
  dup .y unbal sf 2 pow rotY transform
  =boxP
- boxP dup 0.2 vec3.1 sdBox vec4.2
+ boxP dup 0.1 vec3.1 sdBox vec4.2
  }
  
 PI 1.5 / aspect 0.1 10 perspectiveProj inverse =invProj

@@ -1,0 +1,26 @@
+
+{
+fitp
+
+# 0 p .x 10 / sf 0 vec3 p + =p
+
+# p t rotZ transform =p
+
+0
+:loop 20
+ { =dist
+ p dist 4 * t 1 8 / * sin * rotZ transform =p
+ p .y abs p .x abs max dist 1.0 mod sf 0 * + t 0.00 * - 1 mod
+ }
+tan =dist
+
+dist 0.2 * t 0.01 * + 1 1 hsv
+dist sf *
+# dist 05 step *
+# 1 1 1 0 vec4 *
+}
+
+fb'f uv tex 0.9 * blend
+drawto'f
+
+fb'f uv tex draw

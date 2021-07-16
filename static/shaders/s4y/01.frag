@@ -1,8 +1,5 @@
 precision highp float;
 
-varying vec3 p3;
-uniform vec2 u_resolution;
-uniform float t;
 uniform sampler2D u_freq;
 uniform struct {
   float lowpass;
@@ -17,10 +14,6 @@ vec3 fitp;
 vec3 fillp;
 
 #include "./common.glsl"
-
-float sf(float at) {
-  return texture2D(u_freq, vec2(at, 0))[0];
-}
 
 float dot(vec2 p, float yee) {
   return pow(clamp(distance(p, vec2(0.))-sf(yee)-0.5, 0., 1.), 2.);

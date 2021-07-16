@@ -1,0 +1,22 @@
+p .x abs 5 / sf 5 *
+=bri bri
+
+p .y -0.9 step =s
+
+bri 0.1 * 0.5 + 8 0.5 hsv *
+
+s *
+
+{
+s inv
+p 0 -0.01 0 vec3 + =p
+p 1 .002 - * =p
+fb'f uv tex 0.99 * * +
+}
+
+drawto'f
+
+{
+fb'f uv tex
+}
+draw

@@ -1,0 +1,30 @@
+{
+fitp
+p aspect'video1 1 1 vec3 / =p
+# p 0 p .x unbal 10 * t + sin 0.1 * 0 vec3 + =p
+p 4.5 * =p
+p 1 -1 1 vec3 * =p
+p -0.09 -0.55 0 vec3 + =p
+fb'video1 uv tex
+
+p abs dup .x swap .y max 1 step *
+# dup .r =alpha
+# 1 1 1 alpha vec4 *
+# 1 0.8
+# p abs dup .x swap .y max
+# smoothstep *
+
+vec4.1
+
+drawto'f
+}
+
+{
+p 0.1 0.1 1 vec3 * =p
+fb'f uv tex 0 *
+}
+
+draw
+
+fb'f uv tex
+draw

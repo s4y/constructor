@@ -12,3 +12,6 @@ fp .y 0.05 mod 4 dims .y / step max
 
 vec4.1
 draw
+
+# c PI * 2 * sin c PI * 2 * cos vec2 0.4 * c PI * 2 * 3 * t 10 * + sin 0.3 * 1 + *
+# lase

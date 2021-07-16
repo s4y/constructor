@@ -1,9 +1,9 @@
 p .y unbal 2 pow
-0.8 1 1 hsv *
+0.8 p .x abs 2 / fsf 0.6 * + 1 mod 1 1 hsv *
 
 p .x 10 * t + sin unbal
 p .x 33 * t - sin unbal +
-0.1 sf *
+0.1 fsf *
 0 1 clamp
 *
 

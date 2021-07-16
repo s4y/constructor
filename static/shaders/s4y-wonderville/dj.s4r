@@ -1,0 +1,11 @@
+{
+p 0.2 rotZ transform =p
+p .x abs 0.1 + ssf
+p .y *
+} =bri
+
+
+0.1 0 bri abs smoothstep
+
+t 200 / 1 0.5 hsv *
+draw

@@ -1,0 +1,124 @@
+:def sd
+  #0 0 2 vec3 +
+  #t 2 * rotX
+  #t 2 * rotZ * transform
+  #=bp bp
+  #bp .y sf -0.4 * 1 + 1 1 vec3 *
+  .xy 0 0 vec2 distance 0.5 -
+
+{
+fitp
+
+0 0 -1 vec3 =direction
+:def project direction * p +
+
+:def marchOnce project sd
+
+0
+:loop 40
+ dup marchOnce 0 max +
+=dist
+
+dist project =hitP
+
+dist
+dist 5 step *
+3 / 2 pow
+1 1 hsv
+
+dist 10 step *
+
+angle PI / sf dist 10 / *
+angle dist vec2 0 0 vec2 distance t + 0.01 * angle + 1 mod sf
+1 30 dist smoothstep *
+=bri
+t 0.01 * angle PI / 20 / + 0.1 - bri 1 hsv bri *
+}
+
+vec4.1
+draw
+
+bail
+
+{
+fitp
+cdist 10 * cos unbal
+
+}
+
+
+dup 0 swap 1 hsv *
+draw
+
+bail
+
+{
+p 0.99 * =p
+fb'f uv tex 0.9 * 0.0 0 0 vec3 addHsv max
+}
+
+drawto'f
+fb'f uv tex draw
+
+bail
+
+{
+fitp
+cdist sf cdist 0.9 step *
+}
+=bri
+
+bri 1 1 hsv bri *
+
+{
+p 1.01 * =p
+fb'f uv tex 0.9 * +
+}
+
+drawto'f
+fb'f uv tex draw
+
+
+bail
+
+
+
+
+
+
+
+:def spiral
+ {
+ fitp
+ 
+ angle PI / 2 / 0.5 + t 10 mod 5 step 0.3 * + =a
+ 
+ cdist a 10 / - dup 0.1 mod -
+ a 0.1 * +
+ 
+ {
+ 0.05 - abs inv =x
+ 0.915 0.92 x smoothstep
+ }
+ 
+ {
+ cdist a 10 / - 0.1 mod 0.1 / 0.5 - abs inv * =x
+ x
+ }
+ 
+ }
+
+0.9 1 1 hsv
+
+{
+t 0.1 * t 0.3 * 0 vec3 p + 1 + 2 mod 1 - =p
+0.7 0.8 spiral smoothstep 0.5 1 1 hsv * +
+}
+
+{
+t 0.4 * t -0.1 * 0 vec3 p + 1 + 2 mod 1 - =p
+t 1.2 * =t
+0.7 0.8 spiral smoothstep
+1 6 / 1 1 hsv * +
+}
+draw

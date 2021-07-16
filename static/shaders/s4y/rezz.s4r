@@ -1,0 +1,31 @@
+
+{
+fitp
+# p 0 -0.2 0 vec3 + =p
+
+p 2 / =p
+
+
+p p .y 20 * t 10 * + sin 0.1 fsf 10 pow 0.1 * *  0 0 vec3 + =p
+
+p 3 * =p
+
+# p 3 * =p
+# p 1.5 + 3 mod 1.5 - =p
+
+angle PI / 20 / =aa
+cdist aa - dup 0.1 mod - aa +  =spi
+
+cdist 1 step =invv
+0 spi fsf 2 pow -1 * 1 1 hsv
+invv *
+
+}
+{
+p 0.99 * =p
+fb'f uv tex 0.99 * 0.1 fsf 2 pow * blend
+# 1 vec4.1 blend
+}
+drawto'f
+
+fb'f uv tex draw

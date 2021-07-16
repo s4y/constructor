@@ -1,0 +1,21 @@
+{
+fitp
+
+
+p 3 * =p
+p 0 p .x sf 0.0 * 0 vec3 + =p
+cdist 1 step
+
+p .y unbal sf 0.2 * 0.6 + 0.5 1 hsv *
+}
+{
+p 0.9 * =p
+fb'f uv tex
+0.01 0 0 vec3 addHsv
+1 * blend
+}
+drawto'f
+
+
+p p 0.03 mod - =p
+fb'f uv tex draw

@@ -1,0 +1,23 @@
+fitp
+
+:def light { =r1 =r2 =y =x
+ p x y 0 vec3 + =p
+ r2 r1 cdist smoothstep
+ }
+
+0 0 0 1 vec4
+
+# drums
+0. 0.25 0.8 0.1 light
+p .y abs sf 0.1 * 0.5 + 1 1 hsv * +
+
+# # left
+# 0.35 0.15 0.5 0.1 light
+# 0.1 0.5 1 hsv * +
+# 
+# # right
+# -0.55 0.15 0.5 0.1 light
+# 0.1 0.5 1 hsv * +
+
+1 1 1 0 vec4 *
+draw
