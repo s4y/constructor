@@ -90,9 +90,8 @@ export default class Desk {
         this.controller.sendBank();
       };
       this.faders.push(fader);
-      el.appendChild(fader.el);
       this.renderEls.push(renderZone);
-      this.el.appendChild(el);
+      this.el.insertBefore(el, this.el.firstChild);
       fader.value = prog.fade;
     }
   }
