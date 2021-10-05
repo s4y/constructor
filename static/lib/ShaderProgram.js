@@ -97,6 +97,8 @@ export default class ShaderProgram {
       'u_freq_med': () => ctx.medFFT.tex,
       'u_freq_slow': () => ctx.slowFFT.tex,
     };
+    for (const k in ctx.textures)
+      this.uniforms[k] = ctx.textures[k];
 
     if (fsPath != '/shaders/util/copy.frag') {
       this.fbs = [

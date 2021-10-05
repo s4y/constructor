@@ -185,7 +185,9 @@ const makeFFT = (smoothing, size, how) => {
 const makeVideoTexture = () => {
   const { gl } = canvas;
   const video = document.createElement('video');
-  video.muted = false;
+  video.muted = true;
+  video.crossOrigin = true;
+  video.loop = true;
 
   let lastUpdate = null;
   const tex = gl.createTexture();
@@ -314,6 +316,8 @@ window.addEventListener('sourcechange', e => {
   const changedPath = new URL(e.detail, location).pathname;
   if (changedPath.startsWith('/shaders/'))
     e.preventDefault();
+  if (changedPath.startsWith('/videos/'))
+    e.preventDefault();
 });
 
 window.addEventListener('keydown', e => {
@@ -404,6 +408,11 @@ ctx.events.add(new Context(), 'video.play', (k) => {
 
 ctx.events.add(new Context(), 'video.pause', (k) => {
   ctx.textures[k].video.pause();
+});
+
+ctx.events.add(new Context(), 'video.unmute', (k) => {
+  if ('program' in qs)
+    ctx.textures[k].video.muted = false;
 });
 
 window.cmd = (name, ...args) => {
