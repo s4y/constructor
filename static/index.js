@@ -471,3 +471,15 @@ window.cmd = (name, ...args) => {
     name, args,
   }});
 };
+
+if ('serviceWorker' in navigator) {
+  if ('program' in qs) {
+    navigator.serviceWorker.register("sw.js");
+  } else {
+    navigator.serviceWorker.getRegistrations()
+      .then(registrations => {
+        for (const registration of registrations)
+          registration.unregister()
+      });
+  }
+}
