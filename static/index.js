@@ -91,6 +91,7 @@ stats.onPerformanceGood = () => {
 };
 
 canvas.gl.enable(canvas.gl.BLEND);
+canvas.gl.pixelStorei(canvas.gl.UNPACK_FLIP_Y_WEBGL, true);
 canvas.gl.getExtension("OES_standard_derivatives");
 canvas.gl.blendFunc(canvas.gl.ONE, canvas.gl.ONE_MINUS_SRC_ALPHA);
 
