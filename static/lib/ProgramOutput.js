@@ -114,10 +114,6 @@ export default class ProgramOutput {
       this.layers = this.pendingLayers;
       this.pendingLayers = null;
     }
-    for (const layer of this.layers) {
-      if (layer.instance.checkReady())
-        this.drawLayer(layer.instance);
-    }
     if (!this.copyProgram.checkReady()) {
       if (this.copyProgram.error)
         console.error(this.copyProgram.error.infoLog);
