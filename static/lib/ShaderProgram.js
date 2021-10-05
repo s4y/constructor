@@ -172,12 +172,14 @@ export default class ShaderProgram {
         if (typeof val == 'function')
           val = val();
         return () => {
-          if (val instanceof WebGLTexture) {
+          if (val.tex || val instanceof WebGLTexture) {
             if (textureNumber == null)
               textureNumber = nextTextureNumber++;
             gl.activeTexture(gl.TEXTURE0 + textureNumber);
-            gl.bindTexture(gl.TEXTURE_2D, val);
+            gl.bindTexture(gl.TEXTURE_2D, val.tex || val);
             gl.uniform1i(loc, textureNumber);
+            if (val.draw)
+              val.draw();
             return;
           }
           if (val == lastVal)

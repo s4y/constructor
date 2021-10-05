@@ -182,7 +182,7 @@ const makeFFT = (smoothing, size, how) => {
   }
 };
 
-const makeVideoTexture = () => {
+const makeVideoTexture = cb => {
   const { gl } = canvas;
   const video = document.createElement('video');
   video.muted = true;
@@ -224,6 +224,10 @@ const makeVideoTexture = () => {
       ensureCurrent();
     },
     get tex() {
+      if (cb) {
+        cb(video);
+        cb = null;
+      }
       return tex;
     },
     load(src) {
@@ -298,6 +302,15 @@ const ctx = {
 
   },
   textures: {
+    webcam: makeVideoTexture(async video => {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: {
+        }
+      });
+      video.srcObject = stream;
+      video.muted = true;
+      video.play();
+    }),
     video1: makeVideoTexture(),
   },
   events: new Observers(),
