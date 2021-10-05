@@ -5,6 +5,7 @@ class Shader {
     this.gl = gl;
     this.path = path;
     this.shader = shader;
+    this.images = {};
     this.onchange = onchange;
     this.baseURL = new URL(path, location.href);
     this.interestedPaths = new Set();
@@ -35,15 +36,22 @@ class Shader {
       include: path => {
         const url = new URL(path, base);
         return this.loadText(url.pathname, base)
+      },
+      loadimage: arg => {
+        const space = arg.indexOf(' ');
+        const name = arg.substr(0, space);
+        const path = arg.substr(space + 1);
+        this.images[name] = path;
+        return `uniform sampler2D ${name};`;
       }
     };
     let parts = [];
     let hash;
     while ((hash = textIn.indexOf('#')) != -1) {
-      const match = textIn.match(/#([a-z]+) "([^"\n]+)"/);
-      if (match && (match.index == 0 || textIn[match.index-1] == '\n')) {
+      const match = textIn.match(/#([a-z]+) (?:"([^"\n]+)"|(.+))/);
+      if (match && (match.index == 0 || textIn[match.index-1] == '\n') && match[1] in directives) {
         parts.push(textIn.substr(0, match.index));
-        parts.push(directives[match[1]](match[2]));
+        parts.push(directives[match[1]](match[2] || match[3]));
         textIn = textIn.substr(match.index + match[0].length);
       } else {
         parts.push(textIn.substr(0, hash + 1));
@@ -76,9 +84,10 @@ const getCopyProgram = ctx => {
 
 export default class ShaderProgram {
   constructor(ctx, vsPath, fsPath) {
-    const gl = this.gl = ctx.canvas.gl;
+    this.ctx = ctx;
     this.vsPath = vsPath;
     this.fsPath = fsPath;
+    const gl = this.gl = ctx.canvas.gl;
     // this.parallelExt = gl.getExtension('GL_KHR_parallel_shader_compile');
     this.interestedPaths = new Set();
 
@@ -143,6 +152,12 @@ export default class ShaderProgram {
     const { gl, program } = this;
     this.uniformSetters = [];
     let nextTextureNumber = 0;
+    for (const k in this.fs.images) {
+      this.uniforms[k] = this.ctx.getImage('/images/' + this.fs.images[k]);
+    }
+    for (const k in this.ctx.params) {
+      this.uniforms[k] = this.ctx.params[k];
+    }
     for (const k in this.uniforms) {
       const loc = gl.getUniformLocation(program, k);
       if (!loc) {

@@ -251,9 +251,52 @@ if (navigator.mediaDevices) {
   });
 }
 
+class ImagePool {
+  constructor() {
+    this.promises = {};
+  }
+  get(url) {
+    return this.promises[url] || (this.promises[url] = new Promise((resolve, reject) => {
+      const img = new Image();
+      img.crossOrigin = true;
+      img.onload = () => { resolve(img); };
+      img.onerror = reject;
+      img.src = url;
+    }));
+  }
+}
+
 let tBase = sessionStorage.tBase || 0;
+const imagePool = new ImagePool();
+const imageTextures = {};
 const ctx = {
   canvas, fastFFT, medFFT, slowFFT,
+  getImage(path) {
+    const { gl } = canvas;
+    const tex = gl.createTexture();
+
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.LUMINANCE,
+      128, 128, 0,
+      gl.LUMINANCE, gl.UNSIGNED_BYTE, null
+    );
+
+    imagePool.get(path).then(img => {
+      gl.bindTexture(gl.TEXTURE_2D, tex);
+      gl.texImage2D(
+        gl.TEXTURE_2D, 0, gl.RGB, gl.RGB,
+        gl.UNSIGNED_BYTE, img
+      );
+    });
+
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, canvas.gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, canvas.gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    return tex;
+
+  },
   textures: {
     video1: makeVideoTexture(),
   },
@@ -317,6 +360,8 @@ window.addEventListener('sourcechange', e => {
   if (changedPath.startsWith('/shaders/'))
     e.preventDefault();
   if (changedPath.startsWith('/videos/'))
+    e.preventDefault();
+  if (changedPath.startsWith('/images/'))
     e.preventDefault();
 });
 
