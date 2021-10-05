@@ -21,10 +21,72 @@ import ProgramOutput from './lib/ProgramOutput.js'
 import Context from './lib/Context.js'
 import Observers from './lib/Observers.js'
 
+const createStatsTracker = () => {
+  return {
+    fpsHistory: [],
+    frames: null,
+    startTime: null,
+    begin() {
+      if (!this.startTime) {
+        this.startTime = +new Date();
+        this.frames = 0;
+        setTimeout(() => {
+          const delta = +new Date() - this.startTime;
+          const fps = this.frames / (delta / 1000)
+          this.recordFps(fps);
+          if ('program' in qs) {
+            reserve.broadcast({ type: 'perf', value: {
+              program: qs.program || true,
+              fps: fps,
+              downscale: canvas.downscale,
+            } });
+          }
+          this.startTime = null;
+        }, 500);
+      }
+      this.frames++;
+    },
+    end() {
+    },
+    recordFps(fps) {
+      this.fpsHistory.push(fps);
+      while (this.fpsHistory.length > 20)
+        this.fpsHistory.shift();
+      if (this.fpsHistory.length < 3)
+        return;
+      const sortedFps = this.fpsHistory.slice().sort();
+      const middle = (sortedFps.length + 1) / 2;
+      const median = sortedFps[Math.floor(middle)];
+      console.log('fps', median, canvas.downscale);
+      if (median < 56) {
+        this.onPerformanceNeeded();
+        this.fpsHistory.length = 0;
+      }
+      if (median > 58 && this.fpsHistory.length > 19) {
+        this.onPerformanceGood();
+        this.fpsHistory.length = 0;
+      }
+    },
+  };
+};
+const stats = createStatsTracker();
+
 const canvas = new Canvas(outputEl);
 window.addEventListener('resize', () => canvas.resize());
 canvas.resize();
 document.body.onload = () => {
+  canvas.resize();
+};
+
+stats.onPerformanceNeeded = () => {
+  if (canvas.downscale < 3)
+    canvas.downscale += 0.5;
+  canvas.resize();
+};
+
+stats.onPerformanceGood = () => {
+  if (canvas.downscale > 1)
+    canvas.downscale -= 0.5;
   canvas.resize();
 };
 
@@ -230,7 +292,9 @@ const draw = () => {
   canvas.draw(gl => {
     canvas.gl.clearColor(0, 0, 0, 0);
     gl.clear(gl.COLOR_BUFFER_BIT);
+    stats.begin();
     renderer.draw();
+    stats.end();
     if (renderer.error != lastError) {
       lastError = renderer.error;
       showError(renderer.error);

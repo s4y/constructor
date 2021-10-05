@@ -17,12 +17,13 @@ export default class Canvas {
     this.programs = [];
     this.reinit();
     this.heightOffset = 0;
+    this.downscale = 1;
   }
 
   resize() {
     const canvasEl = this.canvasEl;
-    canvasEl.width = canvasEl.clientWidth * devicePixelRatio;
-    canvasEl.height = canvasEl.clientHeight * devicePixelRatio;
+    canvasEl.width = canvasEl.clientWidth * devicePixelRatio / this.downscale;
+    canvasEl.height = canvasEl.clientHeight * devicePixelRatio / this.downscale;
     this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight - this.heightOffset);
   }
 
