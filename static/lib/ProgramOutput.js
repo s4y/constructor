@@ -8,6 +8,7 @@ export default class ProgramOutput {
     this.ctx = ctx;
     this.autoTake = autoTake;
     this.fade = 1;
+    this.takeSpeed = 1;
     this.el = document.createElement('div');
     this.layers = [];
     this.layerBufs = new WeakMap();
