@@ -440,7 +440,13 @@ ctx.events.add(new Context(), 'midi', (k, v) => {
 });
 
 ctx.events.add(new Context(), 'video.load', (k, src) => {
-  ctx.textures[k].load('/videos/' + src);
+  if (/\.m3u8$/.test(src)) {
+    var hls = new Hls();
+    hls.loadSource(src);
+    hls.attachMedia(ctx.textures[k].video);
+    return;
+  }
+  ctx.textures[k].load(src);
 });
 
 ctx.events.add(new Context(), 'video.seek', (k, time) => {
