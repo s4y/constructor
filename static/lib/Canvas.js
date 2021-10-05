@@ -4,6 +4,7 @@ export default class Canvas {
     this.initFn = initFn;
     const glOpts = {
       alpha: false,
+      depth: false,
       antialias: false,
       powerPreference: 'low-power',//'high-performance'
     };

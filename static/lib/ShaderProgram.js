@@ -125,6 +125,7 @@ export default class ShaderProgram {
     ]);
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
     gl.bufferData(gl.ARRAY_BUFFER, this.mesh, gl.STATIC_DRAW);
+    gl.enable(gl.CULL_FACE);
 
     this.program = gl.createProgram();
 
