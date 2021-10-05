@@ -156,3 +156,30 @@ body.program #controls {
   height: calc(var(--value) * 100%);
   width: 100%;
 }
+
+#fpsZone {
+  flex: 1;
+  display: flex;
+}
+
+#fpsZone > div {
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  border: 1px solid var(--border-color);
+  margin-right: -1px;
+  border-width: 0 1px 0 0;
+  padding: 0 0.5em;
+  display: flex;
+  align-items: center;
+}
+
+#fpsZone .fps {
+  font-family: monospace;
+  font-weight: bold;
+}
+
+#fpsZone h2 {
+  font-size: 1em;
+  margin: 0 0.5em 0 0;
+  font-weight: normal;
+}

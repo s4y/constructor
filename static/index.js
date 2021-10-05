@@ -16,6 +16,7 @@ const qs = location.search
   .reduce((params, [k, v]) => (params[k] = v, params), {});
 
 import Canvas from '/lib/Canvas.js'
+import FPSView from '/lib/FPSView.js'
 import Desk from './lib/Desk.js'
 import ProgramOutput from './lib/ProgramOutput.js'
 import Context from './lib/Context.js'
@@ -57,7 +58,6 @@ const createStatsTracker = () => {
       const sortedFps = this.fpsHistory.slice().sort();
       const middle = (sortedFps.length + 1) / 2;
       const median = sortedFps[Math.floor(middle)];
-      console.log('fps', median, canvas.downscale);
       if (median < 56) {
         this.onPerformanceNeeded();
         this.fpsHistory.length = 0;
@@ -392,6 +392,19 @@ document.body.addEventListener('click', e => {
 //   gain.gain.value = slider.valueAsNumber;
 // });
 
+const fpsViews = {};
+const handleFPS = (id, fps, downscale) => {
+  if (!(id in fpsViews)) {
+    const fpsView = new FPSView();
+    fpsView.title = id;
+    fpsViews[id] = fpsView;
+    document.getElementById('fpsZone').appendChild(fpsView.el);
+  }
+  const fpsView = fpsViews[id];
+  fpsView.fps = fps;
+  fpsView.downscale = downscale;
+  fpsView.update();
+}
 
 window.addEventListener('broadcast', e => {
   const { type, value } = e.detail;
@@ -409,6 +422,9 @@ window.addEventListener('broadcast', e => {
   } else if (type == 'state') {
     ctx.state = value;
     ctx.events.fire('state');
+  } else if (type == 'perf') {
+    if (value.fps)
+      handleFPS(value.program === true ? 'prog' : value.program, value.fps, value.downscale);
   }
 });
 
