@@ -72,7 +72,9 @@ const createStatsTracker = () => {
 };
 const stats = createStatsTracker();
 
-const canvas = new Canvas(outputEl);
+const canvas = new Canvas(outputEl, null, {
+  powerPreference: ('program' in qs) ? 'high-performance' : 'low-power',
+});
 window.addEventListener('resize', () => canvas.resize());
 canvas.resize();
 document.body.onload = () => {

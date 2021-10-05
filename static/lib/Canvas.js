@@ -1,14 +1,14 @@
 export default class Canvas {
-  constructor(canvasEl, initFn) {
+  constructor(canvasEl, initFn, opts) {
     this.canvasEl = canvasEl;
     this.initFn = initFn;
     const glOpts = {
       alpha: false,
       depth: false,
       antialias: false,
-      powerPreference: 'low-power',//'high-performance'
+      ...opts,
     };
-    // this.gl = canvasEl.getContext('webgl2', glOpts);
+    this.gl = canvasEl.getContext('webgl2', glOpts);
     this.webglVersion = '1';
     if (this.gl)
       this.webglVersion = '2';
