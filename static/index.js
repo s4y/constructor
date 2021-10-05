@@ -16,6 +16,7 @@ const qs = location.search
   .reduce((params, [k, v]) => (params[k] = v, params), {});
 
 import Canvas from '/lib/Canvas.js'
+import Gradual from '/lib/Gradual.js'
 import FPSView from '/lib/FPSView.js'
 import Desk from './lib/Desk.js'
 import ProgramOutput from './lib/ProgramOutput.js'
@@ -274,6 +275,7 @@ let tBase = sessionStorage.tBase || 0;
 const imagePool = new ImagePool();
 const imageTextures = {};
 const ctx = {
+  Gradual,
   canvas, fastFFT, medFFT, slowFFT,
   getImage(path) {
     const { gl } = canvas;
@@ -300,6 +302,8 @@ const ctx = {
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
     return tex;
 
+  },
+  params: {
   },
   textures: {
     webcam: makeVideoTexture(async video => {

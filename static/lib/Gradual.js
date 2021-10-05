@@ -5,14 +5,12 @@ export default class Gradual {
     this.velocity = 0;
   }
   step() {
-    this.velocity *= 0.99;
+    this.velocity *= 0.90;
     const proposedChange =
       this.currentValue * this.ease
       + this.targetValue * (1-this.ease)
       - this.currentValue;
-    this.velocity = this.velocity + 0.005 * proposedChange;
-    if (Math.abs(proposedChange) < Math.abs(this.velocity) && Math.abs(proposedChange - this.velocity) < Math.abs(this.velocity))
-      this.velocity = proposedChange;
+    this.velocity = this.velocity * this.ease + (1-this.ease) * proposedChange;
     this.currentValue += this.velocity;
   }
   set value(targetValue) {
@@ -24,6 +22,9 @@ export default class Gradual {
   }
   get value() {
     return this.currentValue;
+  }
+  valueOf() {
+    return this.value;
   }
 }
 

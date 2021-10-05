@@ -1,13 +1,41 @@
 import ShaderProgram from '/lib/ShaderProgram.js'
 import S4r from '/lib/S4r.js'
 
+class ScriptProgram {
+  constructor(ctx, path) {
+    this.ctx = ctx;
+    this.interestedPaths = new Set([path]);
+    this.load(path);
+    this.fn = null;
+  }
+  async load(path) {
+    const r = await fetch(path);
+    const text = await r.text();
+    try {
+      const ctor = new Function('ctx', text);
+      this.fn = ctor(this.ctx);
+    } catch(e) {
+      this.error = e;
+      this.fn = null;
+    }
+  }
+  checkReady() {
+    return this.fn != null;
+  }
+  draw() {
+    this.fn();
+  }
+}
+
 class ShowLayer {
   constructor(ctx, config, old) {
     this.config = config;
     this.state = { fade: 1, };
     const childCtx = { ...ctx, state: this.state };
     const ext = config.path.split('.').reduce((a,x) => x);
-    if (ext == 's4r') {
+    if (ext == 'js') {
+      this.instance = new ScriptProgram(childCtx, config.path);
+    } else if (ext == 's4r') {
       this.instance = new S4r(childCtx, [
         'shaders/s4y/common.s4r',
         config.path,
