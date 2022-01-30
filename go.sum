@@ -2,8 +2,8 @@ github.com/gorilla/websocket v1.4.2 h1:+/TMaTYc4QFitKJxsQ7Yye35DkWvkdLcvGKqM+x0U
 github.com/gorilla/websocket v1.4.2/go.mod h1:YR8l580nyteQvAITg2hZ9XVh4b55+EU/adAjf1fMHhE=
 github.com/rjeczalik/notify v0.9.2 h1:MiTWrPj55mNDHEiIX5YUSKefw/+lCQVoAFmD6oQm5w8=
 github.com/rjeczalik/notify v0.9.2/go.mod h1:aErll2f0sUX9PXZnVNyeiObbmTlk5jnMoCa4QEjJeqM=
-github.com/s4y/reserve v1.0.2 h1:hh8/CPrOHALnrGFuuHtNwuNdW+9G4GBRfzgWwjGnvBU=
-github.com/s4y/reserve v1.0.2/go.mod h1:ooYCapf7PhOCJZGMp+30mrXYJG361Hfye4zzekPIpfQ=
+github.com/s4y/reserve v1.0.3 h1:A/vlUlEmryWHLm17tvImd6mR/bJWRDxike898+dsZkg=
+github.com/s4y/reserve v1.0.3/go.mod h1:ooYCapf7PhOCJZGMp+30mrXYJG361Hfye4zzekPIpfQ=
 golang.org/x/sys v0.0.0-20180926160741-c2ed4eda69e7/go.mod h1:STP8DvDyc/dI5b8T5hshtkjS+E42TnysNCUPdjciGhY=
 golang.org/x/sys v0.0.0-20220114195835-da31bd327af9 h1:XfKQ4OlFl8okEOr5UvAqFRVj8pY/4yfcXrddB8qAbU0=
 golang.org/x/sys v0.0.0-20220114195835-da31bd327af9/go.mod h1:oPkhp1MJrh7nUepCBck5+mAzfO9JrbApNNgaTdGDITg=
