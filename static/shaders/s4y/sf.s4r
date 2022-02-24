@@ -1,3 +1,0 @@
-p .x unbal 0.5 pow fsf
-p .y unbal swap step
-vec4.1 draw
