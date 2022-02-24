@@ -1,0 +1,49 @@
+.lcars {
+  --action-color: #d70;
+}
+
+.lcars > section {
+  border-left: 0.5em solid var(--action-color);
+  padding: 0.5em 0 0.5em 0.5em;
+  margin-left: 0.5em;
+  margin-top: 1em;
+  border-top-left-radius: 2em;
+}
+
+.lcars > .footer {
+  background: var(--action-color);
+  padding: 0.1em 2em;
+  margin: 0 0.5em;
+  border-radius: 0 0 0 2em;
+  color: black;
+  font-weight: bold;
+}
+
+.lcars button {
+  font: inherit;
+  background: #f84;
+  padding: 1em 0.5em 0.25em 0;
+  border: none;
+  min-width: 4em;
+  text-align: right;
+  border-radius: 0.7em;
+  display: block;
+  margin: 0.5em;
+  text-transform: inherit;
+}
+
+.lcars button:hover {
+  background: #fa6;
+  cursor: pointer;
+}
+
+.lcars button:active {
+  background: #fea;
+  cursor: pointer;
+}
+
+.lcars .row {
+  display: flex;
+}
+
+
