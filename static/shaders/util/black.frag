@@ -1,3 +1,5 @@
+#include "/shaders/s4y/common.glsl"
+
 precision mediump float;
 
 void main() {
