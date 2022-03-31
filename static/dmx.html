@@ -32,7 +32,6 @@ class DMX {
 }
 
 class Fixture {
-
   constructor() {
   }
 }
@@ -66,12 +65,9 @@ window.addEventListener('broadcast', e => {
   }
 });
 
-function hsv2rgb(h, s, v) {
+function hsv(h, s, v) {
     const K = [1, 2/3, 1/3];
-    const ret = K.map(x => Math.max(0, (Math.min(1, Math.abs(((x + h) % 1 * 6 - 3)) - 1) * v) * (s) + (1-s)) * v);
-    return ret;
-    // const p = abs(fract(c.xxx + K.xyz) * 6 - 3);
-    // return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
+    return K.map(x => Math.max(0, (Math.min(1, Math.abs(((x + h) % 1 * 6 - 3)) - 1) * v) * (s) + (1-s)) * v);
 };
 
 let kick = 0;
