@@ -111,7 +111,7 @@ new ResizeObserver(() => {
 })();
 
 player.addEventListener('playing', e => {
-	replayer.playFrom(player.currentTime - 0.8);
+  replayer.playFrom(player.currentTime - 0.8);
 });
 
 let last_master_update;
@@ -120,22 +120,22 @@ const handleEvent = m => {
   const master = m.filter(deck => deck.master)[0];
   if (!master)
     return;
-	console.log(master.beat, master.beat_count, master.pitch);
-	if (!master.play) {
-		knobs.set('bpm', 0);
-		knobs.set('downbeat', null);
-		console.log('stop play');
-		return;
-	}
+  console.log(master.beat, master.beat_count, master.pitch);
+  if (!master.play) {
+    knobs.set('bpm', 0);
+    knobs.set('downbeat', null);
+    console.log('stop play');
+    return;
+  }
 
-	// Hack for data collection problem with first pirate session, not needed in the future.
-	if (JSON.stringify(master) == JSON.stringify(last_master_update))
-		return;
-	last_master_update = master;
+  // Hack for data collection problem with first pirate session, not needed in the future.
+  if (JSON.stringify(master) == JSON.stringify(last_master_update))
+    return;
+  last_master_update = master;
   const bpm = master.bpm / master.pitch;
   knobs.set('bpm', bpm);
   knobs.set('downbeat', reserve.now() - master.beat_count / bpm * 60000);
-	console.log(m);
+  console.log(m);
 }
 
 </script>
