@@ -5,9 +5,7 @@ export default class BPMSampler {
   }
 
   handleKeydown(e) {
-    if (e.code == 'KeyR') {
-      // this.lastTap = reserve.now() / 1000;
-    } else if (e.code == 'KeyT') {
+    if (e.code == 'KeyT') {
       this.lastTap = reserve.now() / 1000;
       if (this.lastTap - this.tapTimes[this.tapTimes.length-1] > 2)
         this.tapTimes.length = 0;

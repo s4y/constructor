@@ -50,6 +50,8 @@ export default class Desk {
         return;
       if (e.code == 'KeyR') {
         this.ctx.knobs.set('downbeat', reserve.now());
+				this.ctx._currentDownbeat = null;
+				this.lastBeat = null;
         e.preventDefault();
       }
     });
@@ -62,6 +64,7 @@ export default class Desk {
       el.addEventListener('click', e => {
         e.preventDefault();
         this.ctx.knobs.set('bpm', this.ctx.knobs.knobs.bpm - 1);
+				this.lastBeat = null;
         this.showBPM();
       });
       return el;

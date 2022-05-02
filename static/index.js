@@ -178,6 +178,8 @@ const makeFFT = (smoothing, size, how) => {
       return;
     lastUpdate = now;
     analyser.getByteFrequencyData(buf);
+    // for (let i = 0; i < buf.length; i++)
+    //   buf[i] = ((buf[i]/255) * (buf[i]/255))*255;
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texImage2D(
       gl.TEXTURE_2D, 0, gl.LUMINANCE,
@@ -307,8 +309,6 @@ const ctx = {
     if (!this._currentDownbeat)
        this._currentDownbeat = officialDownbeat;
     const diff = officialDownbeat - this._currentDownbeat;
-    if (Math.abs(diff) > 10)
-      console.log(diff);
     if (Math.abs(diff) > 1000)
       this._currentDownbeat = officialDownbeat;
     else
@@ -318,7 +318,7 @@ const ctx = {
   get bpm() { return this.knobs.knobs.bpm; },
   get beat() {
     const { bpm, downbeat } = this;
-    return (bpm && downbeat) ? (((this.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
+    return (bpm && downbeat) ? Math.floor(((this.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
   },
   // get beatAmt() { return Math.pow(1-(this.beat%1), 2); },
   get beatAmt() { return this.beat%1; },
@@ -380,7 +380,6 @@ const ctx = {
 
       let createdSource = false;
       rc.onaddtrack = () => {
-        console.log('maybe yeet');
         if (createdSource)
           return;
         if (!rc.stream.getAudioTracks().length)
