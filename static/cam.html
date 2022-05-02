@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<meta name=viewport content=width=device-width>
+<meta name="apple-mobile-web-app-capable" content="yes">
+<link rel=stylesheet href=cam.css></link>
+<video autoplay muted playsinline id=preview></video>
+<select id=deviceSelector></select>
+<script type=module>
+
+const previewEl = document.getElementById('preview');
+const deviceSelectorEl = document.getElementById('deviceSelector');
+const storageKey = 'onstage.deviceId';
+let deviceId = localStorage[storageKey];
+let stream;
+
+deviceSelectorEl.addEventListener('input', e => {
+  deviceId = localStorage[storageKey] = deviceSelectorEl.value;
+  reopenCamera();
+})
+
+const reopenCamera = async () => {
+  if (stream) {
+    for (const track of stream.getTracks())
+      track.stop();
+  }
+  stream = await navigator.mediaDevices.getUserMedia({
+    // audio: {
+    //   noiseSuppression: false,
+    //   echoCancellation: false,
+    // },
+    video: {
+      deviceId,
+      aspectRatio: 16/9, 
+    }
+  });
+  previewEl.srcObject = stream;
+  reserve.broadcast({ type: 'cam' });
+};
+
+const refreshDevices = async () => {
+  const devices = await navigator.mediaDevices.enumerateDevices();
+  deviceSelectorEl.innerHTML = '';
+  for (const device of devices) {
+    if (device.kind != 'videoinput')
+      continue;
+    const option = document.createElement('option');
+    option.textContent = device.label;
+    option.value = device.deviceId;
+    deviceSelectorEl.appendChild(option);
+  }
+  deviceSelectorEl.value = deviceId;
+};
+
+reopenCamera().then(refreshDevices);
+
+const peerConnections = {};
+window.addEventListener('broadcast', async e => {
+  if (!e.detail.initialOffer)
+    return;
+  const initialOffer = e.detail.initialOffer;
+  if (!(initialOffer in peerConnections)) {
+    const pc = peerConnections[initialOffer] = new RTCPeerConnection();
+    pc.onsignalingstatechange = e => {
+      console.log('state', pc.signalingState);
+    };
+    pc.onnegotiationneeded = async () => {
+      await pc.setLocalDescription();
+      console.log('neg send', pc.localDescription);
+      reserve.broadcast({
+        response: {
+          initialOffer,
+          answer: pc.localDescription,
+        }
+      });
+    };
+    pc.onicecandidate = e => {
+      reserve.broadcast({
+        response: {
+          initialOffer,
+          ice: e.candidate,
+        }
+      });
+    };
+    if (stream)
+      for (const track of stream.getTracks())
+        pc.addTrack(track, stream);
+  }
+  const pc = peerConnections[initialOffer];
+  if (e.detail.offer) {
+    await pc.setRemoteDescription(e.detail.offer);
+    if (e.detail.offer.type == 'offer')
+      pc.onnegotiationneeded();
+  }
+  if (e.detail.ice) {
+    pc.addIceCandidate(e.detail.ice);
+  }
+});
+
+window.addEventListener('sourcechange', e => {
+  if (e.detail != location.href)
+    e.preventDefault();
+});
+
+</script>

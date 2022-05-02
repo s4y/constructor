@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<style>
+
+.tok {
+  border-right: 0.6em solid red;
+  margin-right: -0.6em;
+}
+
+</style>
+<pre id=preview></pre>
+<script type=module>
+
+class WSConnection {
+  constructor(url) {
+    this.url = url;
+  }
+
+  connect() {
+    if (this.ws)
+      this.ws.close();
+    this.ws = new WebSocket(this.url);
+    this.ws.onclose = e => {
+      setTimeout(() => this.connect(), 1000);
+    };
+    this.ws.onmessage = e => {
+      this.onmessage(JSON.parse(e.data));
+    };
+  }
+}
+
+const state = {
+  text: "",
+  cursor: 0,
+};
+const tok = document.createElement('span');
+tok.classList.add('tok');
+
+const conn = new WSConnection('ws://127.0.0.1:8879/ws');
+conn.onmessage = m => {
+  reserve.broadcast({ type: 'editor', value: m });
+  Object.assign(state, m);
+  // console.log(state);
+  preview.textContent = state.text.substring(0, state.cursor-2);
+  preview.appendChild(tok);
+  preview.appendChild(document.createTextNode(state.text.substring(state.cursor-2)));
+  tok.scrollIntoView({ block: 'center', behavior: 'auto' });
+  // if (m.text)
+    // preview.textContent = m.text;
+}
+
+conn.connect();
+
+</script>

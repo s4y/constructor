@@ -1,9 +1,12 @@
 <!DOCTYPE html>
-<meta name=viewport content=width=device-width>
-<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name=viewport content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<link rel="manifest" href="manifest.json">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <link rel=stylesheet href=style.css>
+<body bgcolor=black>
 <canvas id=outputEl></canvas>
 <div id=main></div>
+<pre id=editorPreview></pre>
 <div id=errorZone>
   <div id=errorSummary></div>
   <div id=errorSource></div>
@@ -14,4 +17,5 @@
   <button id=resetTime>T=0</button>
 </div>
 <script src=deps/hls.js></script>
+<script src=deps/math.min.js></script>
 <script src=index.js type=module></script>

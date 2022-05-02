@@ -11,21 +11,27 @@ export default class ProgramOutput {
     this.takeSpeed = 1;
     this.el = document.createElement('div');
     this.layers = [];
-    this.layerBufs = new WeakMap();
     const renderZone = document.createElement('div');
     renderZone.classList.add('renderZone');
     this.el.appendChild(renderZone);
 
-    this.copyProgram = new ShaderProgram(ctx, '/shaders/default.vert', '/shaders/util/copy.frag');
     this.blackProgram = new ShaderProgram(ctx, '/shaders/default.vert', '/shaders/util/black.frag');
-    this.fadeFb = new Framebuffer(ctx.canvas.gl);
-    this.copyProgram.uniforms.buf = this.fadeFb.tex;
+    this.fadeFb = new Framebuffer(ctx);
 
     this.show = new Show(ctx);
-    this.show.addObserver(layers => {
-      // setTimeout(() => {
-        this.showChanged(layers);
-      // }, 0);
+
+    let changedLayers = null;
+    this.show.addObserver(scenes => {
+      let layers = scenes[ctx.showTag || 'default'].layers;
+      if (changedLayers) {
+        changedLayers = layers;
+        return;
+      }
+      changedLayers = layers;
+      setTimeout(() => {
+        this.showChanged(changedLayers);
+        changedLayers = null;
+      }, 50);
     });
 
     ctx.events.add(new Context(), 'take', speed => {
@@ -39,8 +45,9 @@ export default class ProgramOutput {
     });
   }
   showChanged(layers) {
-    // console.log('show changed');
-    if (this.layers.length) {
+    if (false && this.pendingLayers && this.crossFade != 1) {
+      this.nextPendingLayers = layers.slice();
+    } else if (this.layers.length) {
       this.pendingLayers = layers.slice();
       this.crossFade = 1;
       this.doTake = this.autoTake;
@@ -48,55 +55,28 @@ export default class ProgramOutput {
       this.layers = layers;
     }
   }
-  allocLayerBuf() {
-    const gl = this.ctx.canvas.gl;
-    const viewport = gl.getParameter(gl.VIEWPORT);
-    const tex = gl.createTexture();
-    gl.bindTexture(gl.TEXTURE_2D, tex);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGBA,
-      viewport[2], viewport[3], 0,
-      gl.RGBA, gl.UNSIGNED_BYTE, null
-    );
-    const fb = gl.createFramebuffer();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    return [tex, fb];
-  }
   checkReady() {
+    if (!this.layers)
+      return false;
+    if (!this.layers.length)
+      return false;
     for (const layer of this.layers) {
-      if (!layer.instance.checkReady())
+      if (!layer.checkReady())
         return false;
     }
     return true;
   }
-  drawLayer(layer) {
-    let buf = this.layerBufs.get(layer);
-    if (!buf) {
-      buf = new Framebuffer(this.ctx.canvas.gl);
-      this.layerBufs.set(layer, buf);
-    }
-    const gl = this.ctx.canvas.gl;
-    // gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-    // gl.clear(gl.COLOR_BUFFER_BIT);
-    layer.draw();
-    return;
-    buf.drawInto(() => {
-      layer.draw();
-    });
-    this.copyProgram.uniforms.buf = buf.tex;
-    if (this.copyProgram.checkReady())
-      this.copyProgram.draw();
+  uniformsChanged() {
+    for (const layer of this.layers)
+      layer.uniformsChanged();
+    if (this.pendingLayers)
+      for (const layer of this.pendingLayers)
+        layer.uniformsChanged();
   }
   draw() {
     const gl = this.ctx.canvas.gl;
-    if (this.blackProgram.checkReady())
-      this.blackProgram.draw();
+    // if (this.blackProgram.checkReady())
+    //   this.blackProgram.draw();
     if (this.fade == 0)
       return;
     let pendingLayersReady = (() => {
@@ -105,44 +85,40 @@ export default class ProgramOutput {
       if (!this.pendingLayers)
         return false;
       for (const layer of this.pendingLayers) {
-        if (!layer.instance.checkReady())
+        if (!layer.checkReady())
           return false;
       }
       return true;
     })();
     if (pendingLayersReady && this.crossFade <= 0) {
       this.layers = this.pendingLayers;
-      this.pendingLayers = null;
+      this.pendingLayers = null
+      const next = this.nextPendingLayers;
+      this.nextPendingLayers = null;
+      if (next)
+        this.showChanged(next);
     }
-    if (!this.copyProgram.checkReady()) {
-      if (this.copyProgram.error)
-        console.error(this.copyProgram.error.infoLog);
+    if (!this.layers.length)
       return;
-    }
-    for (const layer of this.layers) {
-      if (!layer.instance.checkReady())
-        continue;
-      this.drawLayer(layer.instance);
-    }
+    const lastLayer = this.layers[this.layers.length-1];
+    if (lastLayer.checkReady())
+      lastLayer.drawRecursive();
     if (this.pendingLayers && pendingLayersReady) {
       this.crossFade -= this.takeSpeed;
       this.fadeFb.drawInto(() => {
-        for (const layer of this.pendingLayers)
-          layer.instance.draw();
+        this.pendingLayers[this.pendingLayers.length-1].drawRecursive();
       });
-      this.copyProgram.uniforms.buf = this.fadeFb.tex;
-      if (this.copyProgram.checkReady()) {
-        gl.blendColor(1, 1, 1, this.crossFade);
-        gl.blendFunc(gl.ONE_MINUS_CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
-        this.copyProgram.draw();
-        gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-      }
-      else if (this.copyProgram.error)
-        console.error(this.copyProgram.error.infoLog);
+      gl.blendColor(1, 1, 1, this.crossFade);
+      gl.blendFunc(gl.ONE_MINUS_CONSTANT_ALPHA, gl.CONSTANT_ALPHA);
+      this.ctx.drawCopy(this.fadeFb.tex);
       gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
       if (this.crossFade <= 0) {
         this.layers = this.pendingLayers;
-        this.pendingLayers = null;
+        const next = this.nextPendingLayers;
+        this.pendingLayers = null
+        this.nextPendingLayers = null;
+        if (next)
+          this.showChanged(next);
       }
     }
     if (this.fade < 1) {

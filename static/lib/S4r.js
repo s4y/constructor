@@ -1,88 +1,31 @@
+import * as THREE from '/deps/three/build/three.module.js'
+import { GLTFLoader } from '/deps/three/examples/jsm/loaders/GLTFLoader.js'
+import Framebuffer from './Framebuffer.js'
+
+const meshCache = {};
+const shaderCache = {};
+
 // import HotFile from '/lib/HotFile.js'
 
-const createFB = (gl, w, h) => {
-  const tex = gl.createTexture();
-  gl.bindTexture(gl.TEXTURE_2D, tex);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
-  gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-
-  const fb = gl.createFramebuffer();
-  const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-  gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-
-  gl.bindTexture(gl.TEXTURE_2D, null);
-  gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
-
-  const ret = {
-    tex,
-    fb,
-    w: 0,
-    h: 0,
-    aspect() { return this.w / this.h },
-    clear() {
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-      gl.texImage2D(
-        gl.TEXTURE_2D, 0, gl.RGBA,
-        this.w, this.h, 0,
-        gl.RGBA, gl.UNSIGNED_BYTE, null
-      );
-    },
-    clearIfNeeded() {
-      const viewport = gl.getParameter(gl.VIEWPORT);
-      const targetW = w || viewport[2];
-      const targetH = h || viewport[3];
-      if (this.w != targetW || this.h != targetH) {
-        this.w = targetW;
-        this.h = targetH;
-        this.clear();
-      }
-    },
-    attach(id) {
-      gl.activeTexture(gl['TEXTURE' + id]);
-      gl.bindTexture(gl.TEXTURE_2D, tex);
-    },
-    draw() {
-      this.clearIfNeeded();
-      // gl.generateMipmap(gl.TEXTURE_2D);
-    },
-    drawInto(f) {
-      const oldViewport = gl.getParameter(gl.VIEWPORT);
-      const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-      try {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
-        gl.viewport(0, 0, this.w, this.h);
-        gl.clearColor(0, 0, 0, 0);
-        gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT | gl.STENCIL_BUFFER_BIT);
-        f();
-      } finally {
-        gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
-        gl.viewport(...oldViewport);
-      }
-    },
-  };
-  ret.clearIfNeeded();
-  return ret;
-}
-
-const createFBPair = (gl, w, h, copyFrom) => {
-  const fbs = [createFB(gl, w, h), createFB(gl, w, h)];
+const createFBPair = (ctx, copyFrom) => {
+  const fbs = [new Framebuffer(ctx), new Framebuffer(ctx)];
+  let copyCnt = copyFrom ? fbs.length : 0;
   return {
-    get w() { return fbs[0].w },
-    get h() { return fbs[0].h }, 
+    get w() { return fbs[0].viewport[2] },
+    get h() { return fbs[0].viewport[3] }, 
     get tex() {
       return copyFrom ? copyFrom.tex : fbs[0].tex;
-    },
-    draw() {
-      return fbs[0].draw();
     },
     drawInto(f) {
       fbs.reverse();
       fbs[0].drawInto(f);
-      copyFrom = null;
+      if (copyFrom && !--copyCnt)
+        copyFrom = null;
     },
+    discard() {
+      for (const fb of fbs)
+        Framebuffer.discard(fb);
+    }
   };
 };
 
@@ -106,6 +49,7 @@ const glTypeFromBinaryOperationOnTypes = (l, r) => {
         case 'float':
           return l;
         case 'vec':
+          return r;
         case 'mat':
           if (l == r)
             return l;
@@ -116,10 +60,33 @@ const glTypeFromBinaryOperationOnTypes = (l, r) => {
   throw new Error(`Unknown type pair for binary op: ${l}, ${r}`);
 }
 
-const wrapFragShader = (body, defs) => `
+const wrapVertShader = (body, defs) => `#version 300 es
+    in vec4 p_in;
+    in vec3 norm_in;
+    out vec3 p;
+    out vec3 norm;
+
+    const float PI = asin(1.0) * 2.;
+
+
+
+    ${defs}
+
+    void main() {
+      p = p_in.xyz/p_in.w;
+      norm = norm_in;
+      ${body};
+    }`;
+
+const wrapFragShader = (body, defs) => `#version 300 es
+
 precision highp float;
 
-varying vec3 p;
+in vec3 p;
+in vec3 norm;
+out vec4 fragColor;
+
+#define gl_FragColor fragColor
 
 const float PI = asin(1.0) * 2.;
 
@@ -143,63 +110,6 @@ vec3 hsv2rgb(vec3 c)
     vec4 K = vec4(1.0, 2.0 / 3.0, 1.0 / 3.0, 3.0);
     vec3 p = abs(fract(c.xxx + K.xyz) * 6.0 - K.www);
     return c.z * mix(K.xxx, clamp(p - K.xxx, 0.0, 1.0), c.y);
-}
-
-mat4 transpose(in highp mat4 inMatrix) {
-    highp vec4 i0 = inMatrix[0];
-    highp vec4 i1 = inMatrix[1];
-    highp vec4 i2 = inMatrix[2];
-    highp vec4 i3 = inMatrix[3];
-
-    highp mat4 outMatrix = mat4(
-                 vec4(i0.x, i1.x, i2.x, i3.x),
-                 vec4(i0.y, i1.y, i2.y, i3.y),
-                 vec4(i0.z, i1.z, i2.z, i3.z),
-                 vec4(i0.w, i1.w, i2.w, i3.w)
-                 );
-
-    return outMatrix;
-}
-
-mat4 inverse(mat4 m) {
-  float
-      a00 = m[0][0], a01 = m[0][1], a02 = m[0][2], a03 = m[0][3],
-      a10 = m[1][0], a11 = m[1][1], a12 = m[1][2], a13 = m[1][3],
-      a20 = m[2][0], a21 = m[2][1], a22 = m[2][2], a23 = m[2][3],
-      a30 = m[3][0], a31 = m[3][1], a32 = m[3][2], a33 = m[3][3],
-
-      b00 = a00 * a11 - a01 * a10,
-      b01 = a00 * a12 - a02 * a10,
-      b02 = a00 * a13 - a03 * a10,
-      b03 = a01 * a12 - a02 * a11,
-      b04 = a01 * a13 - a03 * a11,
-      b05 = a02 * a13 - a03 * a12,
-      b06 = a20 * a31 - a21 * a30,
-      b07 = a20 * a32 - a22 * a30,
-      b08 = a20 * a33 - a23 * a30,
-      b09 = a21 * a32 - a22 * a31,
-      b10 = a21 * a33 - a23 * a31,
-      b11 = a22 * a33 - a23 * a32,
-
-      det = b00 * b11 - b01 * b10 + b02 * b09 + b03 * b08 - b04 * b07 + b05 * b06;
-
-  return mat4(
-      a11 * b11 - a12 * b10 + a13 * b09,
-      a02 * b10 - a01 * b11 - a03 * b09,
-      a31 * b05 - a32 * b04 + a33 * b03,
-      a22 * b04 - a21 * b05 - a23 * b03,
-      a12 * b08 - a10 * b11 - a13 * b07,
-      a00 * b11 - a02 * b08 + a03 * b07,
-      a32 * b02 - a30 * b05 - a33 * b01,
-      a20 * b05 - a22 * b02 + a23 * b01,
-      a10 * b10 - a11 * b08 + a13 * b06,
-      a01 * b08 - a00 * b10 - a03 * b06,
-      a30 * b04 - a31 * b02 + a33 * b00,
-      a21 * b02 - a20 * b04 - a23 * b00,
-      a11 * b07 - a10 * b09 - a12 * b06,
-      a00 * b09 - a01 * b07 + a02 * b06,
-      a31 * b01 - a30 * b03 - a32 * b00,
-      a20 * b03 - a21 * b01 + a22 * b00) / det;
 }
 
 mat4 perspectiveProj(float fov, float aspect, float near, float far) {
@@ -229,6 +139,20 @@ float sdBoundingBox( vec3 p, vec3 b, float e )
 
 ${defs || ""}
 
+#define texture2D texture
+
+float sf(float at) {
+  return texture2D(u_freq, vec2(at*at, 0)).x;
+}
+
+float ssf(float at) {
+  return texture2D(u_smooth_freq, vec2(at*at, 0)).x;
+}
+
+float fsf(float at) {
+  return texture2D(u_fast_freq, vec2(at*at, 0)).x;
+}
+
 void main() {
 ${body}
 }
@@ -241,10 +165,14 @@ const draw = t => {
     task();
 }
 
-const compileFragShader = (gl, s) => {
-  const fs = gl.createShader(gl.FRAGMENT_SHADER);
+const compileShader = (gl, type,  s) => {
+  const cache = shaderCache[type] || (shaderCache[type] = {});
+  if (cache[s])
+    return cache[s];
+  const fs = gl.createShader(type);
   gl.shaderSource(fs, s);
   gl.compileShader(fs);
+  cache[s] = fs;
   return fs;
   if (gl.getShaderParameter(fs, gl.COMPILE_STATUS))
     return fs;
@@ -343,11 +271,60 @@ const compile = (gl, parseTree, globals) => {
   let tasks = [];
   let stack = [];
   let defs = {
+    beat: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'float',
+      const: false,
+      value: 'beat',
+    }); }}],
+    inv_camera_mat: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'mat4',
+      const: false,
+      value: 'inv_camera_mat',
+    }); }}],
+    camera_mat: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'mat4',
+      const: false,
+      value: 'camera_mat',
+    }); }}],
+    inv_proj_mat: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'mat4',
+      const: false,
+      value: 'inv_proj_mat',
+    }); }}],
+    proj_mat: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'mat4',
+      const: false,
+      value: 'proj_mat',
+    }); }}],
     t: [{ type: 'native', fn: stack => { stack.push({
       type: 'symbol',
       dataType: 'float',
       const: false,
       value: 't',
+    }); }}],
+    c: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'float',
+      const: false,
+      value: 'c',
+    }); }}],
+    vert: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'vec4',
+      const: false,
+      value: 'p_in',
+      isDefault: true,
+    }); }}],
+    norm: [{ type: 'native', fn: stack => { stack.push({
+      type: 'symbol',
+      dataType: 'vec3',
+      const: false,
+      value: 'norm',
     }); }}],
     p: [{ type: 'native', fn: stack => { stack.push({
       type: 'symbol',
@@ -373,12 +350,51 @@ const compile = (gl, parseTree, globals) => {
       const: false,
       value: 'u_smooth_freq',
     }); }}],
-    aspect: [{ type: 'native', fn: stack => { stack.push({
-      type: 'symbol',
-      dataType: 'float',
-      const: false,
-      value: 'aspect',
-    }); }}],
+    fbAspect: [{ type: 'native', fn: (stack, tag) => {
+      const fb = stack.pop();
+      const u_name = `u_${uniform_seq++}`;
+      tasks.push({
+        type: 'set_uniform',
+        name: u_name,
+        valueType: 'float',
+        get value() {
+          return (fb.w / fb.h) || 1;
+        },
+      });
+      stack.push({
+        type: 'symbol',
+        dataType: 'float',
+        const: false,
+        value: u_name,
+      });
+    }}],
+    aspect: [{ type: 'native', fn: (stack, tag) => {
+      if (tag) {
+        const u_name = `u_fb_aspect_${tag}`;
+        tasks.push({
+          type: 'set_uniform',
+          name: u_name,
+          valueType: 'float',
+          get value() {
+            const fb = globals.framebuffers[tag];
+            return (fb.w / fb.h) || 1;
+          },
+        });
+        stack.push({
+          type: 'symbol',
+          dataType: 'float',
+          const: false,
+          value: u_name,
+        });
+        return;
+      }
+      stack.push({
+        type: 'symbol',
+        dataType: 'float',
+        const: false,
+        value: 'aspect',
+      });
+    }}],
     midi: [{ type: 'native', fn: (stack, tag) => {
       const u_name = `u_${uniform_seq++}`;
       tasks.push({
@@ -394,10 +410,105 @@ const compile = (gl, parseTree, globals) => {
         value: u_name,
       });
     }}],
+    loadGltf: [{ type: 'native', fn: (stack, tag) => {
+      const needLoad = !(tag in meshCache);
+      const mesh = needLoad ? (meshCache[tag] = {}) : meshCache[tag];
+      needLoad && new GLTFLoader().load(`/mesh/${tag}.glb`, gltf => {
+        mesh.gltf = gltf;
+
+        const { attributes, index } = gltf.scene.children[0].geometry;
+        [mesh.positionBuffer] = [attributes.position].map(attr => {
+          const buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+          gl.bufferData(gl.ARRAY_BUFFER, attr.array, gl.STATIC_DRAW);
+          gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+          const indexBuffer = gl.createBuffer();
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+          gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, index.array, gl.STATIC_DRAW);
+          gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+          return {
+            draw(pLoc) {
+              gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+              gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, indexBuffer);
+              gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
+              gl.clear(gl.DEPTH_BUFFER_BIT);
+              gl.enable(gl.DEPTH_TEST);
+              gl.frontFace(gl.CW);
+              gl.drawElements(gl.TRIANGLES, index.count, gl.UNSIGNED_SHORT, 0);
+              gl.frontFace(gl.CCW);
+              gl.drawElements(gl.TRIANGLES, index.count, gl.UNSIGNED_SHORT, 0);
+              gl.disable(gl.DEPTH_TEST);
+              gl.bindBuffer(gl.ARRAY_BUFFER, null);
+              gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, null);
+            }
+          };
+        });
+        [mesh.normalBuffer] = [attributes.normal].map(attr => {
+          const buffer = gl.createBuffer();
+          gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+          gl.bufferData(gl.ARRAY_BUFFER, attr.array, gl.STATIC_DRAW);
+          gl.bindBuffer(gl.ARRAY_BUFFER, null);
+
+          return {
+            bind(loc) {
+              gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
+              gl.enableVertexAttribArray(loc);
+              gl.vertexAttribPointer(loc, 3, gl.FLOAT, false, 0, 0);
+              gl.bindBuffer(gl.ARRAY_BUFFER, null);
+            }
+          };
+        });
+      });
+      stack.push({
+        type: 'symbol',
+        dataType: 'gltf',
+        const: true,
+        value: mesh,
+      });
+    }}],
+    load: [{ type: 'native', fn: (stack, tag) => {
+      const m = tag.match(/^([^']+)(?:'(\d+)x(\d+))?$/);
+      const path = m[1];
+      const u_name = `u_${uniform_seq++}`;
+      tasks.push({
+        type: 'set_uniform',
+        name: u_name,
+        valueType: 'sampler2D',
+        value: globals.ctx.getImage('/' + path, +m[2] || 0, +m[3] || 0),
+      });
+      stack.push({
+        type: 'symbol',
+        dataType: 'float',
+        const: false,
+        value: u_name,
+      });
+    }}],
+    param: [{ type: 'native', fn: (stack, tag) => {
+      const u_name = `param_${tag}`;
+      tasks.push({
+        type: 'set_uniform',
+        name: u_name,
+        valueType: 'float',
+        get value() {
+          if (globals.ctx.config.params && tag in globals.ctx.config.params) {
+            const v = globals.ctx.config.params[tag];
+            return typeof v == 'function' ? v.call(globals.ctx.config, globals.ctx) : v;
+          }
+          return  globals.ctx.params[tag];
+        },
+      });
+      stack.push({
+        type: 'symbol',
+        dataType: 'float',
+        const: false,
+        value: u_name,
+      });
+    }}],
     fb: [{ type: 'native', fn: (stack, tag) => {
       let fb = globals.framebuffers[tag];
       if (!fb)
-        globals.framebuffers[tag] = createFBPair(gl, 0, 0, globals.old && globals.old.globals.framebuffers[tag]);
+        globals.framebuffers[tag] = createFBPair(ctx, globals.old && globals.old.globals.framebuffers[tag]);
       const u_name = `fb_${tag}`;
       tasks.push({
         type: 'set_uniform',
@@ -419,7 +530,7 @@ const compile = (gl, parseTree, globals) => {
         name: u_name,
         valueType: 'vec2',
         get value() {
-          return gl.getParameter(gl.VIEWPORT).slice(2);
+          return globals.ctx.viewport.slice(2);
         },
       });
       stack.push({
@@ -440,15 +551,50 @@ const compile = (gl, parseTree, globals) => {
       tasks.push({
         type: 'draw',
         frag: stack.pop(),
+        vert: defs.vert && (() => {
+          const stack = [];
+          defs.vert[0].fn(stack);
+          if (!stack[0].isDefault)
+            return stack[0];
+        })(),
+        mesh: defs.mesh && (() => {
+          const stack = [];
+          defs.mesh[0].fn(stack);
+          return stack[0];
+        })(),
       });
       preamble = '';
     }}],
+    lase: [{ type: 'native', fn: stack => {
+      tasks.push({
+        type: 'lase',
+        frag: stack.pop(),
+      });
+      preamble = '';
+    }}],
+    setblend: [{ type: 'native', fn: (stack, tag) => {
+      tasks.push({
+        type: 'blend',
+        mode: [gl.ONE_MINUS_DST_COLOR, gl.ONE_MINUS_SRC_COLOR],
+      });
+    }}],
     drawto: [{ type: 'native', fn: (stack, tag) => {
-      const target = globals.framebuffers[tag] || (globals.framebuffers[tag] = createFBPair(gl));
+      const target = globals.framebuffers[tag] || (globals.framebuffers[tag] = createFBPair(ctx));
       tasks.push({
         type: 'draw',
         target,
         frag: stack.pop(),
+        vert: defs.vert && (() => {
+          const stack = [];
+          defs.vert[0].fn(stack);
+          if (!stack[0].isDefault)
+            return stack[0];
+        })(),
+        mesh: defs.mesh && (() => {
+          const stack = [];
+          defs.mesh[0].fn(stack);
+          return stack[0];
+        })(),
       });
       preamble = '';
     }}],
@@ -470,8 +616,8 @@ const compile = (gl, parseTree, globals) => {
       const {audioAnalyser} = globals;
       if (typeof stack[stack.length-1].value != 'number') {
         const textureID = texture_seq++;
-        if (!globals.framebuffers.st)
-          globals.framebuffers.st = createFB(gl, audioAnalyser.byteTimeData.length, 1);
+        // if (!globals.framebuffers.st)
+        //   globals.framebuffers.st = createFB(gl, audioAnalyser.byteTimeData.length, 1);
         tasks.push({
           type: 'set_uniform',
           name: 'u_audio_zero_crossing_time',
@@ -521,16 +667,14 @@ const compile = (gl, parseTree, globals) => {
     sf: [{ type: 'native', fn: stack => {
       if (true || typeof stack[stack.length-1].value != 'number') {
         const textureID = texture_seq++;
-        tasks.push({
-          type: 'set_uniform',
-          name: 'u_freq',
-          valueType: 'sampler2D',
-          value: {
-            get tex() { return globals.freqTex; },
-            draw() {},
-          }
+        stack.push({
+          type: 'invocation',
+          glName: 'sf',
+          dataType: 'float',
+          const: false,
+          args: [stack.pop()],
         });
-        doOps(parse(`2 pow 0 vec2 u_freq swap texture2D .x`));
+        // doOps(parse(`2 pow 0 vec2 u_freq swap texture2D .x`));
       } else {
         const bucket = stack.pop();
         const bucketNumber = Math.floor(+bucket.value * audioAnalyser.byteFreqData.length);
@@ -548,29 +692,22 @@ const compile = (gl, parseTree, globals) => {
     }}],
     fsf: [{ type: 'native', fn: stack => {
       const textureID = texture_seq++;
-      tasks.push({
-        type: 'set_uniform',
-        name: 'u_fast_freq',
-        valueType: 'sampler2D',
-        value: {
-          get tex() { return globals.fastFreqTex; },
-          draw() {},
-        }
+      stack.push({
+        type: 'invocation',
+        glName: 'fsf',
+        dataType: 'float',
+        const: false,
+        args: [stack.pop()],
       });
-      doOps(parse(`2 pow 0 vec2 u_fast_freq swap texture2D .x`));
     }}],
     ssf: [{ type: 'native', fn: stack => {
-      const textureID = texture_seq++;
-      tasks.push({
-        type: 'set_uniform',
-        name: 'u_smooth_freq',
-        valueType: 'sampler2D',
-        value: {
-          get tex() { return globals.smoothFreqTex; },
-          draw() {},
-        }
+      stack.push({
+        type: 'invocation',
+        glName: 'ssf',
+        dataType: 'float',
+        const: false,
+        args: [stack.pop()],
       });
-      doOps(parse(`2 pow 0 vec2 u_smooth_freq swap texture2D .x`));
     }}],
     pause: [{ type: 'native', fn: stack => {
       timeVelocity = 0;
@@ -940,7 +1077,7 @@ const toGLSource = tree => {
       const expr = optimized.extracted[i];
       loop_stack.push(i);
       depFail = false;
-      const nPre = `${expr.const ? "const " : ""}${expr.dataType} ${references[i]} = ${serialize(expr, depsMet)}; \n`;
+      const nPre = `${expr.const ? "" : ""}${expr.dataType} ${references[i]} = ${serialize(expr, depsMet)}; \n`;
       loop_stack.pop();
       if (depFail)
         continue;
@@ -959,6 +1096,104 @@ const toGLSource = tree => {
   return { preamble: decls, expr, }
 };
 
+const jsEnv = {
+  vec2(...args) { return args },
+  vec3(...args) { return args },
+  vec4(...args) { return args },
+  vec5(...args) { return args },
+  math,
+  sin: Math.sin.bind(Math),
+  cos: Math.cos.bind(Math),
+  tan: Math.tan.bind(Math),
+  abs: Math.abs.bind(Math),
+  min: Math.min.bind(Math),
+  max: Math.max.bind(Math),
+  step(a, b) { return a > b ? 1 : 0; },
+  mod(a, b) { return a % b; },
+  pow: math.pow.bind(math),
+  PI: Math.PI,
+  fsf: v => 0,
+  sf: v => 0,
+  t: 0,
+};
+
+const jsMembers = {
+  x: 0,
+  y: 1,
+  z: 2,
+  w: 3,
+  r: 0,
+  g: 1,
+  b: 2,
+  a: 3,
+  u: 0,
+  v: 1,
+};
+
+const toJS = (tree, globals) => {
+  const serialize = node => {
+    switch(node.type) {
+      case "invocation":
+        return `${node.glName}(${node.args.map(serialize).join(', ')})`;
+        break;
+      case "operator":
+        switch (node.value) {
+          case '+':
+            return `math.add(${serialize(node.left)}, ${serialize(node.right)})`;
+          case '-':
+            return `math.subtract(${serialize(node.left)}, ${serialize(node.right)})`;
+          case '*':
+            return `math.dotMultiply(${serialize(node.left)}, ${serialize(node.right)})`;
+          case '/':
+            return `math.divide(${serialize(node.left)}, ${serialize(node.right)})`;
+          default:
+            throw new Error(`Unknown operator '${node.value}' in laser context`);
+        }
+      case "swizzle":
+        return `(a => ${JSON.stringify(node.components.split('').map(c => jsMembers[c]))}.map(i => a[i]))(${serialize(node.value)})`;
+      case "literal":
+        let ns = node.value.toString();
+        if (ns.indexOf('.') === -1)
+          ns += '.';
+        return ns;
+      case "symbol":
+        return node.value;
+      case "reference":
+        if (!depsMet[node.id])
+          depFail = true;
+        return references[node.id];
+      case "loopVar":
+        if (cur_loop === null)
+          throw new Error('tried to loopVar outside a loop');
+        return references[loop_stack[loop_stack.length-1]];
+      case "loop":
+        const loop_var = references[loop_stack[loop_stack.length-1]];
+        cur_loop = loop_stack[loop_stack.length-1];
+        try {
+          return `${serialize(node.initialValue)}; for (int i = 0; i < ${node.count}; i++) ${loop_var} = ${serialize(node.body)};\n`;
+        } finally {
+          cur_loop = null;
+        }
+      default:
+        throw new Error(`Unknown AST node type: ${node.type}`);
+    }
+  };
+  const env = {
+    ...jsEnv,
+    fsf: (v => globals.freqBuf[Math.floor(v*globals.fastFreqBuf.length)]/255),
+    sf: (v => globals.freqBuf[Math.floor(v*globals.freqBuf.length)]/255),
+    t: globals.t - 0.07,
+    get beat() { return globals.ctx.params.beat; },
+  };
+  console.log('wut');
+  const f = new Function(...Object.keys(env), 'c', 'return ' + serialize(tree));
+  return (...args) => {
+    return f.call(null, ...Object.values(env), ...args);
+  };
+};
+/*
+*/
+
 const updateFrag = (gl, vs, globals, value) => {
   let newParseTree;
   newParseTree = parse(value);
@@ -975,16 +1210,65 @@ const updateFrag = (gl, vs, globals, value) => {
             return globals.t;
           }
         },
+        inv_camera_mat: {
+          valueType: 'mat4',
+          get value() {
+            return globals.ctx.uniforms.inv_camera_mat || [];
+          }
+        },
+        camera_mat: {
+          valueType: 'mat4',
+          get value() {
+            return globals.ctx.uniforms.camera_mat || [];
+          }
+        },
+        inv_proj_mat: {
+          valueType: 'mat4',
+          get value() {
+            return globals.ctx.uniforms.inv_proj_mat || [];
+          }
+        },
+        proj_mat: {
+          valueType: 'mat4',
+          get value() {
+            return globals.ctx.uniforms.proj_mat || [];
+          }
+        },
         aspect: {
           valueType: 'float',
           get value() {
-            const viewport = gl.getParameter(gl.VIEWPORT);
+            const { viewport } = globals.ctx;
             return viewport[2] / viewport[3];
+          }
+        },
+        u_freq: {
+          valueType: 'sampler2D',
+          value: {
+            get tex() { return globals.freqTex; },
+            draw() {},
+          }
+        },
+        u_smooth_freq: {
+          valueType: 'sampler2D',
+          value: {
+            get tex() { return globals.smoothFreqTex; },
+            draw() {},
+          }
+        },
+        u_fast_freq: {
+          valueType: 'sampler2D',
+          value: {
+            get tex() { return globals.fastFreqTex; },
+            draw() {},
           }
         },
       };
     }
-    if (task.type == 'draw') {
+    if (task.type == 'blend') {
+      newRuntimeTasks.push(() => {
+        gl.blendFunc(...task.mode);
+      });
+    } else if (task.type == 'draw') {
       let currentProg = null;
 
       let defs = "";
@@ -1004,29 +1288,71 @@ const updateFrag = (gl, vs, globals, value) => {
       `;
       // console.log('source:', progText);
 
-      const prog = globals.prog = gl.createProgram();
+      const prog = gl.createProgram();
       const shaderText = globals.shaderText = wrapFragShader(progText, defs);
-      const fs = globals.fs = compileFragShader(gl, shaderText);
+      const fs = compileShader(gl, gl.FRAGMENT_SHADER, shaderText);
       // console.log(shaderText);
-      gl.attachShader(prog, vs);
+      if (task.vert) {
+        let {preamble, expr: exprText} = toGLSource(task.vert);
+        defs += `
+float sf(float at) {
+  return texture(u_freq, vec2(at*at, 0)).x;
+}
+
+float ssf(float at) {
+  return texture(u_smooth_freq, vec2(at*at, 0)).x;
+}
+
+float fsf(float at) {
+  return texture(u_fast_freq, vec2(at*at, 0)).x;
+}
+
+        `;
+        const progText = wrapVertShader(`
+          ${preamble}
+          gl_Position = ${exprText};
+        `, defs);
+        const vs = compileShader(gl, gl.VERTEX_SHADER, progText);
+        if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+          console.log(gl.getShaderInfoLog(vs));
+          console.log(progText);
+        }
+        gl.attachShader(prog, vs);
+      } else {
+        gl.attachShader(prog, vs);
+      }
+      globals.progs.push({ prog, fs, vs });
       gl.attachShader(prog, fs);
       gl.linkProgram(prog);
       // if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
       //   console.log(gl.getProgramInfoLog(prog));
       //   return;
       // }
-      let pLoc;
       newRuntimeTasks.push(() => {
+        let pLoc, normLoc;
+        const mesh = task.mesh ? task.mesh.value : defaultMesh;
+        const isDefaultMesh = mesh === defaultMesh;
+        if (!mesh)
+          return false;
+        if (mesh != defaultMesh && !mesh.positionBuffer)
+          return false;
+
+        // if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        //   console.log(gl.getProgramInfoLog(prog));
+        //   return;
+        // }
         gl.useProgram(prog);
         currentProg = prog;
 
         let textures = [];
         for (const k in uniforms) {
           const u = uniforms[k];
-          const loc = gl.getUniformLocation(prog, k);
+          const loc = uniforms[k].location || (uniforms[k].location = gl.getUniformLocation(prog, k));
           const v = u.value;
           if (u.valueType === 'sampler2D') {
-            const fb = u.value;
+            let fb = u.value;
+            if (typeof fb == 'function')
+              fb = fb();
             let id = textures.indexOf(fb);
             if (id < 0)
               id = textures.push(fb) - 1;
@@ -1035,29 +1361,54 @@ const updateFrag = (gl, vs, globals, value) => {
             // if its getter does any drawing, doesn't stomp
             // another texture unit.
             gl.activeTexture(gl['TEXTURE' + id]);
-            const tex = fb.tex;
-            gl.bindTexture(gl.TEXTURE_2D, fb.tex);
-            fb.draw();
+            let tex = fb.tex || fb;
+            gl.bindTexture(gl.TEXTURE_2D, tex);
+            fb.draw && fb.draw();
             gl.uniform1i(loc, id);
           } else if (u.valueType === 'vec2') {
             gl.uniform2f(loc, ...u.value);
+          } else if (u.valueType === 'mat4') {
+            gl.uniformMatrix4fv(loc, false, u.value);
           } else {
             gl.uniform1f(loc, u.value);
           }
         }
 
-        if (!pLoc)
-          pLoc = gl.getUniformLocation(prog, "p_in");
-        gl.enableVertexAttribArray(pLoc);
-        gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
-        const doDraw = () => {
-          gl.drawArrays(gl.TRIANGLE_STRIP, 0, mesh.length / 3);
+        pLoc = gl.getAttribLocation(prog, "p_in");
+        if (mesh.normalBuffer) {
+          normLoc = gl.getAttribLocation(prog, "norm_in");
+          mesh.normalBuffer.bind(normLoc);
+        }
+        const doDraw = ctx => {
+          if (mesh.positionBuffer) {
+            if (normLoc)
+              gl.enableVertexAttribArray(normLoc);
+            mesh.positionBuffer.draw(pLoc);
+            if (normLoc)
+              gl.disableVertexAttribArray(normLoc);
+          } else {
+            gl.bindBuffer(gl.ARRAY_BUFFER, globals.buffer);
+            gl.enableVertexAttribArray(pLoc);
+            gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
+            gl.drawArrays(gl.TRIANGLE_STRIP, 0, mesh.length / 3);
+          }
         };
         if (task.target)
           task.target.drawInto(doDraw);
         else
-          doDraw();
+          doDraw(globals.ctx);
       });
+    } else if (task.type === 'lase') {
+      const f = toJS(task.frag, globals);
+      console.log(f);
+      setTimeout(() => {
+        window.setLaserFn(() => {
+          const ret = new Array(500);
+          for (let i = 0; i < ret.length; i++)
+            ret[i] = f(i/ret.length);
+          return ret;
+        });
+      }, 0);
     } else if (task.type === 'set_uniform') {
       pendingUniforms[task.name] = {
         valueType: task.valueType,
@@ -1093,7 +1444,7 @@ const getToken = text => {
   return Object.assign({ type: 'word', value: text }, tok);;
 };
 
-const mesh = new Float32Array([
+const defaultMesh = new Float32Array([
   -1, 1, 0, -1, -1, 0,
   1, 1, 0, 1, -1, 0,
 ]);
@@ -1102,6 +1453,8 @@ export default class S4r {
   constructor(ctx, paths, old) {
     const gl = this.gl = ctx.canvas.gl;
     this.texts = paths.map(() => null);
+    this.uses = {};
+    this.parallelExt = gl.getExtension('KHR_parallel_shader_compile');
     this.ready = false;
     this.interestedPaths = new Set(paths.map(path =>
       new URL(path, location).pathname));
@@ -1118,6 +1471,12 @@ export default class S4r {
     //   }
     // }));
     this.globals = {
+      get fastFreqBuf() {
+        return ctx.fastFFT.buf;
+      },
+      get freqBuf() {
+        return ctx.medFFT.buf;
+      },
       get freqTex() {
         return ctx.medFFT.tex;
       },
@@ -1131,45 +1490,57 @@ export default class S4r {
         return ctx.now();
       },
       midi: ctx.midi,
-      framebuffers: { ...ctx.textures, },
+      framebuffers: Object.create(ctx.textures),
       old,
+      progs: [],
+      ctx,
     }
 
     const buffer = gl.createBuffer();
     gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
-    gl.bufferData(gl.ARRAY_BUFFER, mesh, gl.STATIC_DRAW);
+    gl.bufferData(gl.ARRAY_BUFFER, defaultMesh, gl.STATIC_DRAW);
+    this.globals.buffer = buffer;
 
     const vs = this.vs = gl.createShader(gl.VERTEX_SHADER);
-    gl.shaderSource(vs, `
-    attribute vec3 p_in;
-    varying vec3 p;
-
-    void main() {
-      p = p_in;
-      gl_Position = vec4(p_in, 1.);
-    }
-    `);
+    gl.shaderSource(vs, wrapVertShader(`
+      gl_Position = vec4(p, 1.);
+    `, ``));
     gl.compileShader(vs);
   }
   checkReady() {
+    if (this.ready)
+      return true;
     const { gl, globals } = this;
     if (this.didErr)
       return false;
-    if (!globals.fs)
+    if (!globals.progs.length)
       return false;
-    if (!globals.prog)
-      return false;
-    if (!gl.getShaderParameter(globals.fs, gl.COMPILE_STATUS)) {
-      console.log(globals.shaderText);
-      console.log(gl.getShaderInfoLog(globals.fs));
-      this.didErr = true;
-      return false;
+    for (const { prog, fs, vs, } of globals.progs) {
+      if (this.parallelExt && !this.gl.getProgramParameter(prog, this.parallelExt.COMPLETION_STATUS_KHR))
+        return false;
+      continue;
+      if (!gl.getShaderParameter(fs, gl.COMPILE_STATUS)) {
+        this.error = new Error("Error in fragment shader");
+        this.error.infoLog = gl.getShaderInfoLog(fs);
+        this.error.shaderSource = globals.shaderText;
+        this.didErr = true;
+        return false;
+      }
+      if (!gl.getShaderParameter(vs, gl.COMPILE_STATUS)) {
+        this.error = new Error("Error in vertex shader");
+        this.error.infoLog = gl.getShaderInfoLog(vs);
+        this.error.shaderSource = globals.shaderText;
+        this.didErr = true;
+        return false;
+      }
+      if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+        this.error = new Error("Linker error");
+        this.error.infoLog = gl.getProgramInfoLog(prog);
+        this.didErr = true;
+        return false;
+      }
     }
-    if (!gl.getProgramParameter(globals.prog, gl.LINK_STATUS)) {
-      console.log(gl.getProgramInfoLog(globals.prog));
-      this.didErr = true;
-      return false;
-    }
+    this.ready = true;
     return true;
   }
   compile() {
@@ -1177,13 +1548,40 @@ export default class S4r {
     this.didErr = false;
     for (const text of this.texts)
       if (text == null) return;
-    this.runtimeTasks = updateFrag(this.gl, this.vs, this.globals, this.texts.join('\n'));
-    this.ready = true;
+    try {
+      this.runtimeTasks = updateFrag(this.gl, this.vs, this.globals, this.texts.join('\n'));
+      // this.ready = true;
+    } catch (e) {
+      this.error = e;
+    }
+  }
+  uniformsChanged() {
+    this.compile();
+  }
+  usesInput(k) {
+    if (!(k in this.uses)) {
+      const { gl } = this;
+      this.uses[k] = false;
+      for (const { prog } of this.globals.progs) {
+        if (gl.getUniformLocation(prog, `fb_${k}`)) {
+          this.uses[k] = true;
+          break;
+        }
+      }
+    }
+    return this.uses[k];
   }
   draw() {
+    // if (this.interestedPaths.has("/shaders/s4y/rectTun.s4r"))
+    //   if (this.globals.ctx.viewport[3] != 463.3125)
+    //     console.log(this.globals.ctx.viewport);
+    const { gl } = this;
     for (const task of this.runtimeTasks)
       task();
+    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
     if (this.globals.old)
       this.globals.old = null;
+  }
+  discard() {
   }
 }

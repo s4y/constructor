@@ -7,11 +7,25 @@ body {
   color: white;
   margin: 0;
   font: 18px system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
   overflow: auto;
+  min-height: 100vh;
+}
+
+body.live {
+  font-size: 2em;
+}
+
+body:not(.ready) {
+  display: none;
 }
 
 body.program:fullscreen {
   cursor: none;
+}
+
+:fullscreen {
+  -webkit-cursor-visibility: auto-hide;
 }
 
 #outputEl {
@@ -38,7 +52,7 @@ body.program #controls {
   display: none;
 }
 
-#controls button {
+#controls > button, #controls > .bpm {
   font: inherit;
   background: #333;
   border: none;
@@ -46,10 +60,34 @@ body.program #controls {
   color: inherit;
   padding: 0.5em 0.75em;
   margin: 0;
-  display: block;
+  display: flex;
   border: 1px solid var(--border-color);
   margin-right: -1px;
   border-width: 0 1px 0 1px;
+}
+
+#controls > .bpm.beat {
+  background: red;
+  color: black;
+}
+
+#controls > .bpm > button {
+  appearance: none;
+  height: 2em;
+  border: 1px solid var(--border-color);
+  padding: 0 0.2em;
+  border-radius: 0.2em;
+  background: none;
+  user-select: none;
+  color: inherit;
+}
+
+#controls > .bpm > button:first-child {
+  margin-right: 0.4em;
+}
+
+#controls > .bpm > button:last-child {
+  margin-left: 0.5em;
 }
 
 #controls button:focus {
@@ -125,7 +163,7 @@ body.program #controls {
   display: flex;
 }
 
-@media (max-width: 800px) {
+@media (max-width: 1200px) and (orientation: portrait) {
   .desk > div:first-child {
   height: calc((100vw - 2vw)/(16/9));
   width: calc(100vw);
@@ -163,7 +201,6 @@ body.program #controls {
 }
 
 #fpsZone > div {
-  font-variant-numeric: tabular-nums;
   text-align: center;
   border: 1px solid var(--border-color);
   margin-right: -1px;
@@ -171,6 +208,12 @@ body.program #controls {
   padding: 0 0.5em;
   display: flex;
   align-items: center;
+  transition: background 0.1s;
+}
+
+#fpsZone > div.drop {
+  transition: none;
+  background: red;
 }
 
 #fpsZone .fps {
@@ -182,4 +225,46 @@ body.program #controls {
   font-size: 1em;
   margin: 0 0.5em 0 0;
   font-weight: normal;
+}
+
+#editorPreview {
+  transition: all 0.2s;
+
+  font-size: 18px;
+  position: absolute;
+  overflow: hidden;
+  bottom: 20vh;
+  opacity: 0.8;
+  height: 50vh;
+  width: 75vw;
+  background: rgba(0, 0, 0, 20%);
+  border-radius: 10px;
+  display: block;
+  display: none;
+  margin: 0 0 0 10vw;
+  padding: 2em;
+  box-sizing: border-box;
+  text-shadow:
+    1px 0 1px black,
+    -1px 0 1px black,
+    0 1px 1px black,
+    0 -1px 1px black,
+    -1px -1px 1px black,
+    -1px 1px 1px black,
+    1px -1px 1px black,
+    1px 1px 1px black;
+}
+
+.cursorTok {
+  border-right: 0.6em solid red;
+  margin-right: -0.6em;
+}
+
+@keyframes pulse-border {
+  from {
+    border-right-color: transparent;
+  }
+  to {
+    border-right-color: red;
+  }
 }

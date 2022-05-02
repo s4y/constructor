@@ -2,6 +2,13 @@
 <input type=range min=0 max=127 disabled id=crossfader>
 <script>
 
+const send = value => {
+  reserve.broadcast({
+    type: 'midiChannel',
+    value,
+  });
+};
+
 class GenericMidiController {
   constructor(input) {
     this.state = JSON.parse(sessionStorage['midi.' + input.id] || "{}");
@@ -12,11 +19,34 @@ class GenericMidiController {
   }
 
   handle(channel, button, value) {
+      const midi = [channel, button, value];
     if (channel == 176)
       this.set(`knob${button}`, value/127);
     if (channel == 177)
-      this.set(`button${button-35}`, value/127);
-    // reserve.broadcast({ type: 'genericMidi', value: [channel, button, value] });
+      this.set(`note${button}`, value/127);
+  if (channel >= 144 && channel < 144+16) {
+
+    // const osc = ac.createOscillator();
+    // osc.type = 'sawtooth';
+    // const g = ac.createGain();
+    // g.gain.value = 0.01;
+    // osc.frequency.value = frequencyForNote(note-60);
+    // osc.connect(g);
+    // g.connect(ac.destination);
+    // osc.start();
+    // noteOscs[note] = osc;
+    send({ type: 'noteOn', midi, });
+  } else if (channel >= 128 && channel <= 128+16) {
+    // noteOscs[note].stop();
+    // delete noteOscs[note];
+
+    send({ type: 'noteOff', midi, });
+  } else if (channel == 248) {
+    send({ type: 'clock', midi, });
+  } else {
+    console.log('unknown midi:', midi);
+    send({ type: 'midi', midi, });
+  }
     // midiarea.textContent += JSON.stringify({ now: Date.now(), midi: [channel, button, value] }) + '\n';
   }
 
@@ -96,26 +126,16 @@ class PMIDIP30Controller extends GenericMidiController {
   }
 }
 
-class KnobbyMidiController extends GenericMidiController {
-  handle(channel, button, value) {
-    if (channel == 176)
-      this.set(`knob${button}`, value/127);
-    if (channel == 177)
-      this.set(`kbutton${button}`, value/127);
-  }
-}
-
 navigator.requestMIDIAccess({
   sysex: true
 }).then(midi => {
   for (const input of midi.inputs.values()) {
-    console.log(input);
     if (input.name == 'USB MIDI Controller')
       new PMIDIP30Controller(input);
     else if (input.name == 'Midi Fighter 3D')
       new GenericMidiController(input);
     else if (input.name == 'Midi Fighter Twister')
-      new KnobbyMidiController(input);
+      new GenericMidiController(input);
     else
       new GenericMidiController(input);
   }

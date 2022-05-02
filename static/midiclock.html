@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<script type=module>
+
+import Knobs from './lib/Knobs.js'
+
+const knobs = new Knobs();
+const outputs = [];
+
+navigator.requestMIDIAccess({
+  sysex: true
+}).then(midi => {
+  for (const output of midi.outputs.values())
+      outputs.push(output);
+});
+
+let beatInterval = null;
+
+const sendBeat = () => {
+  const { bpm, downbeat } = knobs.knobs;
+  if (!bpm || !downbeat)
+    return;
+  const time = Date.now() / 1000;
+  console.log('send', 0x00, Math.floor((time / 60) % 60), Math.floor(time % 60));
+  for (const output of outputs)
+    output.send([0xF0, 0x7F, 0x7F, 0x01, 0x00, 0x00, (time / 60) % 60, time % 60, 0xff, 0xF7,]);
+}
+
+setInterval(sendBeat, 1000 / 24 / 4);
+
+// knobs.observe("bpm", doSync);
+// knobs.observe("downbeat", doSync);
+
+</script>

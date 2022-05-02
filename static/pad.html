@@ -1,0 +1,142 @@
+<!DOCTYPE html>
+<meta name=viewport content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel=stylesheet href=style.css>
+<style>
+
+body {
+  margin: 0;
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  touch-action: none;
+}
+
+body > div {
+  display: flex;
+  height: 100vh;
+  flex: 1;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+#buttons {
+}
+
+#buttons > button,
+#knobs > button
+{
+  margin: 1.5%;
+  background: none;
+  height: 22%;
+  width: 22%;
+  border: 3px solid white;
+  position: relative;
+}
+
+#knobs > button::before {
+  content: '';
+  position: absolute;
+  display: block;
+  bottom: 0;
+  height: var(--amt);
+  left: 0;
+  right: 0;
+  background: green;
+}
+
+#knobs > button {
+  border: none;
+  background: #333;
+}
+
+#buttons > button:active, #buttons > button.active {
+  background: #aaa;
+}
+
+</style>
+<body bgcolor=black>
+  <div id=knobs></div>
+  <div id=buttons></div>
+<script>
+
+document.body.classList.add('ready');
+
+const state = {};
+
+const sendState = () => {
+  reserve.broadcast({
+    type: 'midi',
+    value: state,
+  });
+};
+
+for (let i = 0; i < 4 * 4; i++) {
+  const id = `button${Math.floor(i/4)*4+4-(i%4)}`;
+  const button = document.createElement('button');
+  const set = down => e => {
+      e.preventDefault();
+      button.classList.toggle('active', down);
+      state[id] = down;
+      console.log(id, down);
+      sendState();
+  };
+  button.addEventListener('mousedown', set(true));
+  button.addEventListener('mouseup', set(false));
+  button.addEventListener('touchstart', set(true));
+  button.addEventListener('touchend', set(false));
+  buttons.appendChild(button);
+}
+
+for (let i = 0; i < 4 * 4; i++) {
+  const id = `knob${i}`;
+  const button = document.createElement('button');
+  const set = down => e => {
+      e.preventDefault();
+      button.classList.toggle('active', down);
+      state[id] = down;
+      console.log(id, down);
+      sendState();
+  };
+  button.addEventListener('mousedown', set(true));
+  button.addEventListener('mouseup', set(false));
+
+  let initialTouch;
+  let initialValue;
+  button.addEventListener('touchstart', e => {
+    e.preventDefault();
+    if (e.targetTouches.length > 1) {
+      state[`kbutton${i}`] = true;
+      console.log(`kbutton${i}`, true);
+      sendState();
+    } else {
+      initialTouch = e.targetTouches[0];
+      initialValue = state[id] || 0;
+    }
+    const rect = button.getBoundingClientRect();
+    const listener = e => {
+        console.log(e.targetTouches[0].clientY - initialTouch.clientY);
+        const val = Math.max(0, Math.min(1, 1 - ((e.targetTouches[0].clientY - initialTouch.clientY) / rect.height - initialValue)));
+        console.log(id, val);
+        button.style.setProperty('--amt', `${val * 100}%`);
+        state[`knob${i}`] = val;
+        sendState();
+    };
+    button.addEventListener('touchmove', listener);
+    button.addEventListener('touchend', e => {
+      state[`kbutton${i}`] = false;
+      console.log(`kbutton${i}`, false);
+      sendState();
+      button.removeEventListener('touchmove', listener);
+    }, { once: true });
+  });
+  knobs.insertBefore(button, null);
+}
+
+
+window.addEventListener('sourcechange', e => {
+  if (e.detail != location.href)
+      e.preventDefault();
+});
+</script>

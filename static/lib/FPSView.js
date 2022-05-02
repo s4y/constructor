@@ -21,6 +21,12 @@ export default class FPSView {
     if (this.fpsEl.textContent != fps);
       this.fpsEl.textContent = fps;
   }
+  didDrop() {
+    const { el } = this;
+    el.classList.add('drop');
+    el.offsetLeft;
+    el.classList.remove('drop');
+  }
   adopt() {
     this.el.innerHTML = '';
     this.init();

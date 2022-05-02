@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<style>
+
+body {
+  background: black;
+}
+
+#preview {
+  width: 100%;
+  image-rendering: pixelated;
+  border: 10px solid #888;
+  border-radius: 10px;
+  box-sizing: border-box;
+}
+</style>
+<canvas width=120 height=7 id=preview></canvas>
+<script type=module>
+
+class WSConnection {
+  constructor(url) {
+    this.url = url;
+  }
+
+  connect() {
+    if (this.ws)
+      this.ws.close();
+    this.ws = new WebSocket(this.url);
+    this.ws.onclose = e => {
+      this.open = false;
+      setTimeout(() => this.connect(), 1000);
+    };
+    this.ws.onopen = e => {
+      this.open = true;
+    };
+    this.onmessage && (this.ws.onmessage = e => {
+      this.onmessage(JSON.parse(e.data));
+    });
+  }
+  send(...args) {
+    this.ws.send(...args);
+  }
+}
+
+class Art {
+  constructor(path, args) {
+    this.url = new URL(path, location);
+    this.args = args;
+    this.fn = () => {};
+    this.load();
+
+    window.addEventListener('sourcechange', e => {
+      if (e.detail != this.url.href)
+        return;
+      e.preventDefault();
+      this.load();
+    });
+  }
+  async load() {
+    const text = await (await fetch(this.url)).text();
+    this.fn = new Function(...this.args, text);
+  }
+}
+
+const params = {
+  first: false,
+  state: {},
+  t: 0,
+  x: 0,
+  y: 0,
+  w: 120,
+  h: 7,
+  get xx() { return (this.x / this.w) * 2 - 1; },
+  get yy() { return (this.y / this.h) * 2 - 1; },
+  get ctx() { return window.top.ctx; },
+  get beat() { return this.ctx.beat; },
+  get beatAmt() { return this.ctx.beatAmt; },
+  ssf(x) { 
+    const buf = this.ctx.slowFFT.buf;
+    return buf[Math.floor(x*buf.length)]/255;
+  },
+  fsf(x) { 
+    const buf = this.ctx.fastFFT.buf;
+    return buf[Math.floor(x*buf.length)]/255;
+  },
+  sf(x) { 
+    const buf = this.ctx.medFFT.buf;
+    return buf[Math.floor(x*buf.length)]/255;
+  },
+  st() { 
+  },
+};
+
+const art = new Art('art.js', Object.keys(params));
+
+const ac = new AudioContext();
+const gain = ac.createGain();
+const analyser = ac.createAnalyser();
+analyser.fftSize = 4096;
+
+window.gain = gain;
+gain.gain.value = 1;
+gain.connect(analyser);
+
+const byteFreqData = new Uint8Array(61);
+const byteTimeData = new Uint8Array(analyser.fftSize);
+window.byteTimeData = byteTimeData;
+const mul = 8;
+const maxPos = byteTimeData.length - (120*mul);
+
+analyser.smoothingTimeConstant = 0.1;
+
+const ws = new WSConnection('ws://127.0.0.1:10605');
+ws.connect();
+
+const ctx = preview.getContext('2d');
+const id = new ImageData(120, 7);
+
+for (let i = 0; i < id.data.length; i += 4)
+  id.data[i+3] = 255;
+
+const drawPreview = buf => {
+  for (let i = 0; i < id.data.length; i += 4) {
+    const val = (buf[Math.floor(i/4/8)] >> (i/4%8)) & 1;
+    id.data[i+0] = val ? 255 : 0;
+  }
+  ctx.putImageData(id, 0, 0);
+};
+
+setInterval(() => {
+  const buf = new Uint8Array(7 * 15);
+
+  analyser.getByteFrequencyData(byteFreqData);
+  analyser.getByteTimeDomainData(byteTimeData);
+
+  const glitch = 0;//Math.pow((byteFreqData.slice(0, 20).reduce((a, b) => Math.max(a, b))) / 255, 4);
+
+  let ofs = maxPos;
+  let above = byteTimeData[0] >= 127;
+  while (ofs && byteTimeData[ofs] >= 127)
+    ofs--;
+  while (ofs && byteTimeData[ofs] < 127)
+    ofs--;
+
+  params.t = Date.now() / 1000;
+  for (let i = 0; i < 120; i++) {
+    const val = Math.max(0, byteTimeData[ofs + i * 8]-127)*2;
+    params.x = i;
+    for (let j = 0; j < 7; j++) {
+      params.first = i == 0 && j == 0;
+      params.y = j;
+      if (art.fn(...Object.values(params).map(x => typeof x == 'function' ? x.bind(params) : x)))
+        buf[Math.floor(i/8) + j * Math.floor(((120/8+glitch*41/7)%120))] |= 1 << (i % 8);
+      // if ((1-Math.pow(val/255, 1))*7 <= j)
+      //   buf[Math.floor(i/8) + j * Math.floor(((120/8+glitch*41/7)%120))] |= 1 << (i % 8);
+    }
+  }
+
+  drawPreview(buf);
+  if (ws.open)
+    ws.send(buf);
+}, 10);
+
+(async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: {
+      noiseSuppression: false,
+      echoCancellation: false,
+    }
+  });
+  ac.createMediaStreamSource(stream).connect(gain);
+})();
+
+</script>

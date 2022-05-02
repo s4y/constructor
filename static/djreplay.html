@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<style>
+
+#transport {
+  position: relative;
+  height: 50px;
+}
+
+#transport > * {
+  width: 100%;
+  height: 100%;
+  left: 0;
+  top: 0;
+}
+
+</style>
+<div id=transport>
+<canvas id=events></canvas>
+<audio id=player controls src="/djsync_record/dj_sync_trim.wav"></audio>
+</div>
+<script type=module>
+
+import Knobs from './lib/Knobs.js'
+
+class Replayer {
+  load(events) {
+    this.events = events;
+    this.zeroTime = events[0].time;
+    this.duration = (events[events.length-1].time - this.zeroTime);
+    // this.playFrom(0);
+  }
+  playFrom(t) {
+    this.startTime = Date.now() / 1000 - t;
+    console.log(new Date((this.zeroTime + t) * 1000));
+    this.play();
+  }
+  async playEvent(e, seek) {
+    const delay = this.startTime + e.time - this.zeroTime - new Date() / 1000;
+    if (seek && delay < 0)
+      return
+    if (delay > 0)
+      await new Promise(r => (this.nextEventTimeout = setTimeout(r, delay * 1000)));
+    handleEvent(e.data);
+  }
+  async play() {
+    if (this.nextEventTimeout)
+      clearTimeout(this.nextEventTimeout);
+    let seek = true;
+    for (const event of this.events)
+      if (await this.playEvent(event, seek))
+        seek = false;
+    this.nextEventTimeout = setTimeout(() => {
+    });
+
+  }
+}
+
+const knobs = new Knobs(false);
+const replayer = new Replayer();
+const eventsCanvas = document.getElementById('events');
+const ctx = eventsCanvas.getContext('2d');
+
+const draw = () => {
+  const { events } = replayer;
+  if (!events)
+    return;
+  for (const event of events) {
+    const x = (event.time - replayer.zeroTime) / replayer.duration * eventsCanvas.width;
+    ctx.beginPath();
+    ctx.moveTo(x, 0);
+    ctx.lineTo(x, eventsCanvas.height);
+    if (event.data.length && event.data[0].master)
+      ctx.strokeStyle = 'red';
+    else if (event.data.length > 1 && event.data[1].master)
+      ctx.strokeStyle = 'green';
+    else if (event.data.length > 2 && event.data[2].master)
+      ctx.strokeStyle = 'blue';
+    else
+      ctx.strokeStyle = 'black';
+    ctx.stroke();
+  }
+}
+
+new ResizeObserver(() => {
+  eventsCanvas.width = eventsCanvas.clientWidth;
+  eventsCanvas.height = eventsCanvas.clientHeight;
+  draw();
+}).observe(eventsCanvas);
+
+// scrubber.addEventListener('input', e => {
+//   const t = scrubber.valueAsNumber;
+//   replayer.playFrom(t)
+// });
+
+(async () => {
+  const har = await (await fetch('/djsync_record/dj_sync.har')).json();
+  const events = [];
+  for (const entry of har.log.entries) {
+    for (const message of entry._webSocketMessages)
+      events.push({ time: message.time, data: JSON.parse(message.data) });
+  }
+  while (events[0].time < 1649785834)
+    events.shift();
+  while (events[events.length-1].time > 1649785834 + 60)
+    events.pop();
+  replayer.load(events);
+  draw();
+  // scrubber.max = replayer.duration;
+  // scrubber.value = 0;
+  // replayer.playFrom(0);
+})();
+
+player.addEventListener('playing', e => {
+	replayer.playFrom(player.currentTime - 0.8);
+});
+
+let last_master_update;
+
+const handleEvent = m => {
+  const master = m.filter(deck => deck.master)[0];
+  if (!master)
+    return;
+	console.log(master.beat, master.beat_count, master.pitch);
+	if (!master.play) {
+		knobs.set('bpm', 0);
+		knobs.set('downbeat', null);
+		console.log('stop play');
+		return;
+	}
+
+	// Hack for data collection problem with first pirate session, not needed in the future.
+	if (JSON.stringify(master) == JSON.stringify(last_master_update))
+		return;
+	last_master_update = master;
+  const bpm = master.bpm / master.pitch;
+  knobs.set('bpm', bpm);
+  knobs.set('downbeat', reserve.now() - master.beat_count / bpm * 60000);
+	console.log(m);
+}
+
+</script>

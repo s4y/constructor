@@ -7,11 +7,24 @@ p 1 + 2 mod 1 - =p
 fp .xy 0 0 vec2 distance 1 - abs 16 dims .x / step
 p .x abs 8 dims .x / step max
 p .y abs 8 dims .y / step max
-fp .x 0.05 mod 4 dims .x / step max
-fp .y 0.05 mod 4 dims .y / step max
+fp .x 0.05 mod 8 dims .x aspect / / step max
+fp .y 0.05 mod 8 dims .y / step max
 
 vec4.1
 draw
 
-# c PI * 2 * sin c PI * 2 * cos vec2 0.4 * c PI * 2 * 3 * t 10 * + sin 0.3 * 1 + *
-# lase
+# c PI * 2 * cos c PI * 2 * sin 0.4 0 0 vec5 lase
+
+# bail
+
+# c 0.8 pow =c
+# c PI * 10 * t 1 10 * t sin * + + sin c PI * 10 * t + cos vec2 0.7 *
+# =p
+# c 0.1 step =on
+# p c * =p
+# p .x
+# p .y
+# 0.4 on * # #c PI * 2 * t 0.1 * - sin *
+# 0.0 on * # #c 2 * t 0.2 * - PI * sin *
+# 0.0 on * #  c 2 * t 0.5 * + 1 mod *
+# vec5 lase

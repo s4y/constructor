@@ -1,53 +1,83 @@
 export default class Framebuffer {
-  constructor(gl) {
-    this.gl = gl;
-    const viewport = gl.getParameter(gl.VIEWPORT);
+  constructor(ctx) {
+    // if (Framebuffer.reusePool.length) {
+    //   const fb = Framebuffer.reusePool.pop();
+    //   fb.ctx = ctx;
+    //   return fb;
+    // }
+    this.ctx = ctx;
+    const { gl } = this.ctx.canvas;
     const tex = gl.createTexture();
     gl.bindTexture(gl.TEXTURE_2D, tex);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
     gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
-    gl.texImage2D(
-      gl.TEXTURE_2D, 0, gl.RGBA,
-      viewport[2], viewport[3], 0,
-      gl.RGBA, gl.UNSIGNED_BYTE, null
-    );
+
+    const depthTex = gl.createTexture();
+    gl.bindTexture(gl.TEXTURE_2D, depthTex);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+
+
     const fb = gl.createFramebuffer();
-    const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
     gl.bindFramebuffer(gl.FRAMEBUFFER, fb);
     gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, tex, 0);
-    gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.TEXTURE_2D, depthTex, 0);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
     this.fb = fb;
     this.tex = tex;
-    this.viewport = [0, 0, viewport[2], viewport[3]];
+    this.depthTex = depthTex;
+
+    // this.alloc();
   }
   alloc() {
-    const { gl } = this;
+    const { gl } = this.ctx.canvas;
+    this.viewport = [0, 0, this.ctx.viewport[2], this.ctx.viewport[3]];
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.texImage2D(
       gl.TEXTURE_2D, 0, gl.RGBA,
       this.viewport[2], this.viewport[3], 0,
       gl.RGBA, gl.UNSIGNED_BYTE, null
     );
+    gl.bindTexture(gl.TEXTURE_2D, this.depthTex);
+    gl.texImage2D(
+      gl.TEXTURE_2D, 0, gl.DEPTH_COMPONENT16,
+      this.viewport[2], this.viewport[3], 0,
+      gl.DEPTH_COMPONENT, gl.UNSIGNED_SHORT, null
+    );
+  }
+  activate(source) {
+    const { gl } = this.ctx.canvas;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, source ? source.fb : null);
+    // gl.viewport(...(source ? source.viewport : this.ctx.viewport));
   }
   drawInto(f) {
-    const { gl } = this;
-    const oldViewport = gl.getParameter(gl.VIEWPORT);
-    const oldFb = gl.getParameter(gl.FRAMEBUFFER_BINDING);
-    if (this.viewport[2] != oldViewport[2] || this.viewport[3] != oldViewport[3]) {
-      this.viewport = [0, 0, oldViewport[2], oldViewport[3]];
+    const { gl } = this.ctx.canvas;
+    const lastFb = Framebuffer.stack[0];
+    const oldViewport = this.ctx.viewport;
+    Framebuffer.stack.unshift(this);
+    if (!this.viewport || this.viewport[2] != oldViewport[2] || this.viewport[3] != oldViewport[3]) {
       // Note: other textures are getting stomped here and I don't
       // know why. See the console during a window resize.
       this.alloc();
     }
-    gl.bindFramebuffer(gl.FRAMEBUFFER, this.fb);
-    gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
-    gl.viewport(...this.viewport);
-    f();
-    gl.bindFramebuffer(gl.FRAMEBUFFER, oldFb);
-    gl.viewport(...oldViewport);
+    this.activate(this);
+    ctx.withViewport(this.viewport, () => {
+      gl.clearColor(0, 0, 0, 0);
+      gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+      f();
+    });
+    Framebuffer.stack.shift();
+    this.activate(lastFb);
   }
 }
 
+Framebuffer.stack = [];
+// Framebuffer.reusePool = [];
+
+// Framebuffer.reuse = framebuffer => {
+//   Framebuffer.reusePool.push(framebuffer);
+// };

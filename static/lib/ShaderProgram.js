@@ -1,5 +1,3 @@
-import Framebuffer from '/lib/Framebuffer.js'
-
 class Shader {
   constructor(gl, path, shader, onchange) {
     this.gl = gl;
@@ -72,31 +70,21 @@ class Shader {
   // }
 }
 
-let sharedCopyProgram;
-const getCopyProgram = ctx => {
-  if (!sharedCopyProgram) {
-    sharedCopyProgram = new ShaderProgram({
-      ...ctx,
-    }, '/shaders/default.vert', '/shaders/util/copy.frag');
-  }
-  return sharedCopyProgram;
-};
-
 export default class ShaderProgram {
   constructor(ctx, vsPath, fsPath) {
     this.ctx = ctx;
     this.vsPath = vsPath;
     this.fsPath = fsPath;
+    this.uses = {};
     const gl = this.gl = ctx.canvas.gl;
-    // this.parallelExt = gl.getExtension('GL_KHR_parallel_shader_compile');
+    this.parallelExt = gl.getExtension('KHR_parallel_shader_compile');
     this.interestedPaths = new Set();
 
     this.uniforms = {
+      ...ctx.uniforms,
       t: () => ctx.now(),
       u_resolution: () => {
-        const { gl } = ctx.canvas;
-        const viewport = gl.getParameter(gl.VIEWPORT);
-        return [viewport[2], viewport[3]];
+        return ctx.viewport.slice(2);
       },
       'u_audio.lowpass': () => ctx.lowpass.get(),
       'u_audio.highpass': () => ctx.highpass.get(),
@@ -106,19 +94,14 @@ export default class ShaderProgram {
       'u_freq_med': () => ctx.medFFT.tex,
       'u_freq_slow': () => ctx.slowFFT.tex,
     };
-    for (const k in ctx.textures)
-      this.uniforms[k] = ctx.textures[k];
-
-    if (fsPath != '/shaders/util/copy.frag') {
-      this.fbs = [
-        new Framebuffer(gl),
-        new Framebuffer(gl),
-      ];
-      this.copyProgram = getCopyProgram(ctx);
-      this.copyProgram.uniforms.buf = this.fbs[0].tex;
+    for (const k in ctx.textures) {
+      const tex = ctx.textures[k];
+      this.uniforms[k] = tex;
+      this.uniforms[`${k}_aspect`] = () => tex.w / tex.h;
     }
+    this.uniforms.u_fb = ctx.textures.self;
 
-    const buffer = gl.createBuffer();
+    const buffer = this.buffer = gl.createBuffer();
     this.mesh = new Float32Array([
       -1, 1, 0, -1, -1, 0,
       1, 1, 0, 1, -1, 0,
@@ -150,17 +133,28 @@ export default class ShaderProgram {
     this.linking = false;
   }
   buildUniforms() {
-    const { gl, program } = this;
+    const { ctx, gl, program } = this;
+
+    for (const k in ctx.uniforms)
+      if (!(k in this.uniforms))
+        this.uniforms[k] = ctx.uniforms[k];
+
     this.uniformSetters = [];
     let nextTextureNumber = 0;
     for (const k in this.fs.images) {
       this.uniforms[k] = this.ctx.getImage('/images/' + this.fs.images[k]);
     }
     for (const k in this.ctx.params) {
-      this.uniforms[k] = this.ctx.params[k];
+      this.uniforms[k] = () => this.ctx.params[k];
     }
+    const uniformLengths = {
+    };
     for (const k in this.uniforms) {
       const loc = gl.getUniformLocation(program, k);
+      if (!loc)
+        continue;
+      const index = gl.getUniformIndices(program, [k])[0];
+      const info = gl.getActiveUniforms(program, [index], gl.UNIFORM_TYPE);
       if (!loc) {
         // console.info('missing or unused uniform', k);
         continue;
@@ -170,9 +164,11 @@ export default class ShaderProgram {
       this.uniformSetters.push(() => {
         let val = this.uniforms[k];
 
-        if (typeof val == 'function')
-          val = val();
         return () => {
+          if (typeof val == 'function')
+            val = val();
+          if (val == null)
+            return;
           if (val.tex || val instanceof WebGLTexture) {
             if (textureNumber == null)
               textureNumber = nextTextureNumber++;
@@ -183,15 +179,24 @@ export default class ShaderProgram {
               val.draw();
             return;
           }
-          if (val == lastVal)
-            return;
-          if (!Array.isArray(val))
+          if (!val.length)
             val = [val];
           lastVal = val;
-          gl[`uniform${val.length}f`](loc, ...val);
+          if (info & 0xFFF0 == 0x8b50) {
+            const f = `uniform${info-0x8B50+2}fv`;
+            gl[f](loc, val);
+          } else if (info == 0x8B5C) {
+            gl.uniformMatrix4fv(loc, false, val);
+          } else {
+            gl[`uniform${val.length}f`](loc, ...val);
+          }
         };
       });
     }
+  }
+  uniformsChanged() {
+    if (this.ready)
+      this.buildUniforms();
   }
   checkReady() {
     const { gl } = this;
@@ -199,11 +204,10 @@ export default class ShaderProgram {
       return false;
     if (this.ready != null)
       return this.ready;
-    // return this.gl.getProgramParameter(this.program, this.parallelExt.COMPLETION_STATUS_KHR);
+    if (this.parallelExt && !this.gl.getProgramParameter(this.program, this.parallelExt.COMPLETION_STATUS_KHR))
+      return false;
     if (gl.getProgramParameter(this.program, gl.LINK_STATUS)) {
-      const pLoc = gl.getUniformLocation(this.program, "p_in");
-      gl.enableVertexAttribArray(pLoc);
-      gl.vertexAttribPointer(pLoc, 3, gl.FLOAT, false, 0, 0);
+      this.pLoc = gl.getUniformLocation(this.program, "p_in");
       this.buildUniforms();
       return (this.ready = true);
     }
@@ -222,26 +226,50 @@ export default class ShaderProgram {
     }
     return (this.ready = false);
   }
-  draw() {
+  usesInput(k) {
+    if (!(k in this.uses)) {
+      const { gl } = this;
+      this.uses[k] = gl.getUniformLocation(this.program, k);
+    }
+    return this.uses[k];
+  }
+  predraw() {
+    if (!this.checkReady())
+      return;
+
     const { gl } = this;
+    gl.useProgram(this.program);
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.buffer);
+    gl.enableVertexAttribArray(this.pLoc);
+    gl.vertexAttribPointer(this.pLoc, 3, gl.FLOAT, false, 0, 0);
+    for (const setter of this.uniformSetters.map(s => s()))
+      setter();
+  }
+  draw() {
+    if (!this.checkReady())
+      return;
+
+    const { gl, ctx } = this;
 
     const doDraw = () => {
-      gl.useProgram(this.program);
-      for (const setter of this.uniformSetters.map(s => s()))
-        setter();
+      this.predraw();
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, this.mesh.length / 3);
     };
 
     if (this.fbs) {
+      const { copyProgram } = ctx;
       this.uniforms.u_fb = this.fbs[1].tex;
       this.fbs[0].drawInto(doDraw);
 
-      if (this.copyProgram.checkReady()) {
-        this.copyProgram.uniforms.buf = this.fbs[0].tex;
-        this.copyProgram.draw();
+      if (copyProgram.checkReady()) {
+        const hadBuf = 'buf' in copyProgram.uniforms;
+        ctx.copyProgram.uniforms.buf = this.fbs[0].tex;
+        if (!hadBuf)
+          ctx.copyProgram.uniformsChanged();
+        ctx.copyProgram.draw();
       } else {
-        if (this.copyProgram.error)
-          console.log(this.copyProgram.error);
+        if (ctx.copyProgram.error)
+          console.log(ctx.copyProgram.error);
       }
       this.fbs.reverse();
     } else {

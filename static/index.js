@@ -19,15 +19,25 @@ import Canvas from '/lib/Canvas.js'
 import Gradual from '/lib/Gradual.js'
 import FPSView from '/lib/FPSView.js'
 import Desk from './lib/Desk.js'
+import Live from './lib/Live.js'
 import ProgramOutput from './lib/ProgramOutput.js'
 import Context from './lib/Context.js'
 import Observers from './lib/Observers.js'
+import RemoteCamera from './lib/RemoteCamera.js'
+import ShaderProgram from './lib/ShaderProgram.js'
+import Knobs from './lib/Knobs.js'
+
+import * as THREE from '/deps/three/build/three.module.js'
+import { GLTFLoader } from '/deps/three/examples/jsm/loaders/GLTFLoader.js'
 
 const createStatsTracker = () => {
   return {
     fpsHistory: [],
     frames: null,
     startTime: null,
+    recordDroppedFrame() {
+      this.droppedFrame = true;
+    },
     begin() {
       if (!this.startTime) {
         this.startTime = +new Date();
@@ -36,13 +46,13 @@ const createStatsTracker = () => {
           const delta = +new Date() - this.startTime;
           const fps = this.frames / (delta / 1000)
           this.recordFps(fps);
-          if ('program' in qs) {
-            reserve.broadcast({ type: 'perf', value: {
-              program: qs.program || true,
-              fps: fps,
-              downscale: canvas.downscale,
-            } });
-          }
+          reserve.broadcast({ type: 'perf', value: {
+            program: 'program' in qs ? (qs.program || true) : '',
+            fps: fps,
+            downscale: canvas.downscale,
+            drop: this.droppedFrame,
+          } });
+          this.droppedFrame = false;
           this.startTime = null;
         }, 500);
       }
@@ -59,11 +69,11 @@ const createStatsTracker = () => {
       const sortedFps = this.fpsHistory.slice().sort();
       const middle = (sortedFps.length + 1) / 2;
       const median = sortedFps[Math.floor(middle)];
-      if (median < 56) {
+      if (median < 58) {
         this.onPerformanceNeeded();
         this.fpsHistory.length = 0;
       }
-      if (median > 58 && this.fpsHistory.length > 19) {
+      if (median > 30 && this.fpsHistory.length > 19) {
         this.onPerformanceGood();
         this.fpsHistory.length = 0;
       }
@@ -73,7 +83,7 @@ const createStatsTracker = () => {
 const stats = createStatsTracker();
 
 const canvas = new Canvas(outputEl, null, {
-  powerPreference: ('program' in qs) ? 'high-performance' : 'low-power',
+  powerPreference: ('program' in qs || 'perf' in qs) ? 'high-performance' : 'low-power',
 });
 window.addEventListener('resize', () => canvas.resize());
 canvas.resize();
@@ -82,15 +92,19 @@ document.body.onload = () => {
 };
 
 stats.onPerformanceNeeded = () => {
-  if (canvas.downscale < 3)
+  return;
+  if (canvas.downscale < 3) {
     canvas.downscale += 0.5;
-  canvas.resize();
+    canvas.resize();
+  }
 };
 
 stats.onPerformanceGood = () => {
-  if (canvas.downscale > 1)
-    canvas.downscale -= 0.5;
-  canvas.resize();
+  return;
+  if (canvas.downscale > 1) {
+    canvas.downscale -= 0.25;
+    canvas.resize();
+  }
 };
 
 canvas.gl.enable(canvas.gl.BLEND);
@@ -243,8 +257,8 @@ const makeVideoTexture = cb => {
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const mixer = ac.createGain();
 const kMaxFrequency = 15000;
-const fastFFT = makeFFT(0.0, 4096, canvas.gl.NEAREST);
-const medFFT = makeFFT(0.7, 4096, canvas.gl.LINEAR);
+const fastFFT = makeFFT(0.0, 2048, canvas.gl.LINEAR);
+const medFFT = makeFFT(0.87, 4096, canvas.gl.LINEAR);
 const slowFFT = makeFFT(0.94, 8192, canvas.gl.LINEAR);
 
 if (navigator.mediaDevices) {
@@ -255,6 +269,12 @@ if (navigator.mediaDevices) {
     }
   }).then(stream => {
     ac.createMediaStreamSource(stream).connect(mixer);
+    navigator.mediaDevices.enumerateDevices().then(devices => {
+      for (const device of devices) {
+        if (device.kind != 'audioinput')
+          continue;
+      }
+    });
   });
 }
 
@@ -273,13 +293,48 @@ class ImagePool {
   }
 }
 
+const fps = +sessionStorage.fps || 60;
 let tBase = sessionStorage.tBase || 0;
 const imagePool = new ImagePool();
 const imageTextures = {};
 const ctx = {
   Gradual,
+  knobs: new Knobs(!('program' in qs)),
   canvas, fastFFT, medFFT, slowFFT,
-  getImage(path) {
+  _currentDownbeat: null,
+  get downbeat() {
+    const officialDownbeat = this.knobs.knobs.downbeat;
+    if (!this._currentDownbeat)
+       this._currentDownbeat = officialDownbeat;
+    const diff = officialDownbeat - this._currentDownbeat;
+    if (Math.abs(diff) > 10)
+      console.log(diff);
+    if (Math.abs(diff) > 1000)
+      this._currentDownbeat = officialDownbeat;
+    else
+      this._currentDownbeat += diff * 0.01;
+    return this._currentDownbeat;
+  },
+  get bpm() { return this.knobs.knobs.bpm; },
+  get beat() {
+    const { bpm, downbeat } = this;
+    return (bpm && downbeat) ? (((this.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
+  },
+  // get beatAmt() { return Math.pow(1-(this.beat%1), 2); },
+  get beatAmt() { return this.beat%1; },
+  viewportStack: [],
+  get viewport() { return this.viewportStack[0] || canvas.viewport; },
+  withViewport(viewport, f) {
+    this.viewportStack.unshift(viewport);
+    this.canvas.gl.viewport(...this.viewport);
+    try {
+      f();
+    } finally {
+      this.viewportStack.shift();
+      this.canvas.gl.viewport(...this.viewport);
+    }
+  },
+  getImage(path, w, h) {
     const { gl } = canvas;
     const tex = gl.createTexture();
 
@@ -291,6 +346,10 @@ const ctx = {
     );
 
     imagePool.get(path).then(img => {
+      if (w)
+        img.width = w;
+      if (h)
+        img.height = w;
       gl.bindTexture(gl.TEXTURE_2D, tex);
       gl.texImage2D(
         gl.TEXTURE_2D, 0, gl.RGB, gl.RGB,
@@ -305,27 +364,98 @@ const ctx = {
     return tex;
 
   },
+  midiNotes: [],
+  midiClock: { t: 0 },
   params: {
   },
+  uniforms: {
+  },
   textures: {
+    remoteCam: makeVideoTexture(async video => {
+      const rc = new RemoteCamera();
+      video.srcObject = rc.stream;
+      video.autoplay = true;
+      video.playsInline = true;
+      video.play();
+
+      let createdSource = false;
+      rc.onaddtrack = () => {
+        console.log('maybe yeet');
+        if (createdSource)
+          return;
+        if (!rc.stream.getAudioTracks().length)
+          return;
+        ac.createMediaStreamSource(rc.stream).connect(mixer);
+        createdSource = true;
+      };
+    }),
     webcam: makeVideoTexture(async video => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
+          deviceId: '40727b8c1101a37e261e0f6c78a8eddf8a30a21bbec6dee7c277da0caa7441ce',
         }
       });
+      reserve.broadcast(await navigator.mediaDevices.enumerateDevices());
       video.srcObject = stream;
       video.muted = true;
+      video.playsInline = true;
       video.play();
     }),
     video1: makeVideoTexture(),
+    screen: makeVideoTexture(),
   },
   events: new Observers(),
-  now: () => (Date.now()/1000 - tBase) % ((1 << 15) - (1 << 14)),
+  _frameCount: 0,
+  now() {
+    let now = (this.clock.now()/1000 - tBase);
+    const drop = Math.floor(now * 60 - window.ctx._frameCount);
+    if (drop) {
+      stats.recordDroppedFrame();
+      window.ctx._frameCount = (now * 60);
+    }
+    const fNow = Math.floor(window.ctx._frameCount) / 60;
+    return fNow % ((1 << 15) - (1 << 14));
+  },
   midi: new Proxy({}, {
     get(obj, k) {
       return obj[k] || 0;
     }
   }),
+  uniformsChanged() {
+    renderer.uniformsChanged();
+  },
+  clock: {
+    now() {
+      return reserve.now() + this.fixedOffset;
+    },
+    fixedOffset: 0,
+  },
+
+};
+window.ctx = ctx;
+
+const incFrameCount = () => {
+  ctx._frameCount += 60 / fps;
+  requestAnimationFrame(incFrameCount);
+}
+incFrameCount();
+
+if (sessionStorage.clockOffset)
+  ctx.clock.fixedOffset = +sessionStorage.clockOffset;
+
+ctx.copyProgram = new ShaderProgram(
+  ctx,
+  '/shaders/default.vert',
+  '/shaders/util/copy.frag');
+ctx.drawCopy = tex => {
+  const { copyProgram } = ctx;
+  if (!copyProgram.checkReady())
+    return;
+  const hadBuf = 'buf' in copyProgram.uniforms;
+  copyProgram.uniforms.buf = tex;
+  if (!hadBuf)
+    copyProgram.uniformsChanged();
+  copyProgram.draw();
 };
 ctx.lowpass = makeFilteredSampler('lowpass');
 ctx.highpass = makeFilteredSampler('highpass');
@@ -334,10 +464,21 @@ ctx.notch = makeFilteredSampler('notch');
 ctx.showFile = '/show.js';
 ctx.showTag = qs.program || 'default';
 
-const renderer = new (('program' in qs) ? ProgramOutput : Desk)(ctx);
-if (renderer.el)
-  main.appendChild(renderer.el);
-
+const renderer = (() => {
+  if (document.getElementById('main')) {
+    const renderer = new (('program' in qs) ? ProgramOutput : Desk)(ctx, false);
+    if (renderer.bpmEl)
+      controls.insertBefore(renderer.bpmEl, document.getElementById('fpsZone').nextElementSibling);
+    if (renderer.el)
+      main.appendChild(renderer.el);
+    return renderer;
+  } else if (document.getElementById('live')) {
+    const renderer = new Live(ctx);
+    if (renderer.el)
+      live.appendChild(renderer.el);
+    return renderer;
+  }
+})();
 if ('program' in qs) {
   document.body.classList.add('program');
   document.body.addEventListener('click', e => {
@@ -356,7 +497,7 @@ let lastError = null;
 const draw = () => {
   canvas.draw(gl => {
     canvas.gl.clearColor(0, 0, 0, 0);
-    gl.clear(gl.COLOR_BUFFER_BIT);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
     stats.begin();
     renderer.draw();
     stats.end();
@@ -369,9 +510,12 @@ const draw = () => {
 
 const handleAnimationFrame = () => {
   draw();
+  updateLEDs();
   requestAnimationFrame(handleAnimationFrame);
 }
 requestAnimationFrame(handleAnimationFrame);
+
+// setInterval(handleAnimationFrame, 500);
 
 // Don't reload the page when shaders change.
 window.addEventListener('sourcechange', e => {
@@ -386,7 +530,7 @@ window.addEventListener('sourcechange', e => {
 
 window.addEventListener('keydown', e => {
   if (e.code == 'KeyF')
-    document.body.requestFullscreen();
+    document.body.webkitRequestFullscreen();
 });
 
 // window.addEventListener('scroll', e => {
@@ -425,6 +569,12 @@ const handleFPS = (id, fps, downscale) => {
   fpsView.update();
 }
 
+let midiNonce = 0;
+let editorEl = document.getElementById('editorPreview');
+
+const cursorTok = document.createElement('span');
+cursorTok.classList.add('cursorTok');
+
 window.addEventListener('broadcast', e => {
   const { type, value } = e.detail;
   if (type == 'midi') {
@@ -442,31 +592,67 @@ window.addEventListener('broadcast', e => {
     ctx.state = value;
     ctx.events.fire('state');
   } else if (type == 'perf') {
+    const id = value.program === true ? 'prog' : value.program;
     if (value.fps)
-      handleFPS(value.program === true ? 'prog' : value.program, value.fps, value.downscale);
+      handleFPS(id, value.fps, value.downscale);
+    if (value.drop) {
+      const view = fpsViews[id];
+      if (id == 'prog' && view)
+        view.didDrop();
+    }
+  } else if (type == 'midiChannel') {
+    switch (value.type) {
+      case 'noteOn':
+        ctx.midiNotes.push([value.midi, midiNonce++]);
+        break;
+      case 'noteOff':
+        for (let i = 0; i < ctx.midiNotes.length; i++) {
+          if (ctx.midiNotes[i][0][1] == value.midi[1])
+            ctx.midiNotes.splice(i--, 1);
+        }
+        break;
+      case 'allOff':
+        ctx.midiNotes.length = 0;
+        break;
+      case 'clock':
+        ctx.midiClock.t++;
+    }
+  } else if (type == 'editor') {
+    return;
+    if (!ctx.editorState)
+      ctx.editorState = {};
+    Object.assign(ctx.editorState, value);
+    if (!editorEl.style.display)
+      editorEl.style.display = 'block';
+    editorEl.textContent = ctx.editorState.text.substring(0, ctx.editorState.cursor-2);
+    editorEl.appendChild(cursorTok);
+    editorEl.appendChild(document.createTextNode(ctx.editorState.text.substring(ctx.editorState.cursor-2)));
+    cursorTok.scrollIntoView({ block: 'center', behavior: 'auto' });
+    ctx.cursorTok = cursorTok;
   }
 });
 
-resetTime.addEventListener('click', e => {
+const doResetTime = e => {
+  e.preventDefault();
   reserve.broadcast({ type: 'timeBase', value: Date.now() / 1000 });
-});
+}
 
-take.addEventListener('click', e => {
+const doTake = e => {
+  e.preventDefault();
   reserve.broadcast({ type: 'event', value: {
     name: 'take',
-    args: [],
+    args: [.25],
   }});
-});
+}
 
-take.addEventListener('click', e => {
-  reserve.broadcast({ type: 'event', value: {
-    name: 'take',
-    args: [0.2],
-  }});
-});
+resetTime.addEventListener('touchstart', doResetTime);
+resetTime.addEventListener('click', doResetTime);
+
+take.addEventListener('touchstart', doTake);
+take.addEventListener('click', doTake);
 
 ctx.events.add(new Context(), 'midi', (k, v) => {
-  if (k != 'note15' || v != true)
+  if (k != 'kbutton15' || v != true)
     return;
   reserve.broadcast({ type: 'event', value: {
     name: 'take',
@@ -507,6 +693,136 @@ window.cmd = (name, ...args) => {
   }});
 };
 
+const castScreen = async () => {
+  const { video } = ctx.textures.screen;
+  video.muted = true;
+  ctx.textures.screen.video.srcObject = await navigator.mediaDevices.getDisplayMedia({
+    cursor: 'never',
+  });
+  video.play();
+}
+window.castScreen = castScreen;
+
+let laserWs;
+let laserFn = null;
+let laserReady = false;
+
+window.setLaserFn = f => {
+  if (!laserWs) {
+    laserWs = new WebSocket('ws://127.0.0.1:8765/laser');
+    laserWs.onmessage = e => {
+      // buf_free = JSON.parse(e.data).free
+      laserReady = true;
+      do_laser_comms();
+    };
+  }
+  laserFn = f;
+};
+
+let t = 0;
+
+const do_laser_comms = () => {
+  if (!laserReady)
+    return;
+  if (!laserFn)
+    return;
+  const scale = n => Math.min(1, Math.max(0, n)) * 0xfff;
+  const q = laserFn();
+  const ab = new Uint16Array(q.length * 5);
+  for (let i = 0; i < q.length;i++) {
+    const point = q[i];
+    ab[(i*5)+0] = scale(point[0]/2+.5);
+    ab[(i*5)+1] = scale(point[1]/2+.5);
+    ab[(i*5)+2] = scale(point[2]);
+    ab[(i*5)+3] = scale(point[3]);
+    ab[(i*5)+4] = scale(point[4]);
+  }
+  laserWs.send(ab);
+  laserReady = false;
+  return;
+  // while (buf_free > 5000) {
+    let now = t;//Date.now();
+    // for (let i = 0; i < ab.length; i += 10) {
+    //   const p = i/ab.length;
+    //   const x = Math.floor((Math.sin(p * Math.PI * 2)*0.9/2+0.5 * (1 + Math.sin(p * Math.PI * 20 + now / 1000) * 0.0)) * 0xFFF);
+    //   const y = Math.floor((Math.cos(p * Math.PI * 2)*0.9/2+0.5 * (1 + Math.cos(p * Math.PI * 20 + now / 1000) * 0.0)) * 0xFFF);
+    //   ab[i+0] = x & 0xff;
+    //   ab[i+1] = x >> 8;
+    //   ab[i+2] = y & 0xff;
+    //   ab[i+3] = y >> 8;
+    //   ab[i+4] = 0xaf * Math.pow((Math.sin(now * 0.005 + p * 10 * Math.PI * 2)/2+.5), 1.);
+    //   ab[i+5] = 0x0f;
+    //   ab[i+6] = 0x00;
+    //   ab[i+7] = 0x00;
+    //   ab[i+8] = 0x2f * Math.pow((Math.sin(now * -0.005 + p * 10 * Math.PI * 2)/2+.5), 1.);
+    //   ab[i+9] = 0x00;
+    //   // buf_free -= 1;
+    // }
+    // console.log('yee', buf_free);
+  // }
+}
+
+let ws;
+const connectWs = () => {
+  if (ws)
+    ws.close();
+  ws = new WebSocket(`${location.protocol == 'https:' ? 'wss' : 'ws'}://${location.host}/ws`);
+  ws.onclose = e => {
+    setTimeout(connectWs, 1000);
+  };
+  ws.onmessage = e => {
+  };
+}
+connectWs();
+
+class WSConnection {
+  constructor(url) {
+    this.url = url;
+  }
+
+  connect() {
+    if (this.ws)
+      this.ws.close();
+    this.ws = new WebSocket(this.url);
+    this.ws.onclose = e => {
+      this.open = false;
+      setTimeout(() => this.connect(), 1000);
+    };
+    this.ws.onopen = e => {
+      this.open = true;
+    };
+    this.ws.onmessage = e => {
+      this.onmessage(JSON.parse(e.data));
+    };
+  }
+}
+
+const ledState = []
+
+const ledConn = new WSConnection('ws://127.0.0.1:9390');
+if ('nucLEDs' in qs)
+  ledConn.connect();
+
+const updateLEDs = () => {
+  if (!ledConn.open)
+    return;
+  const bpm = ctx.knobs.knobs.bpm;
+  const downbeat = ctx.knobs.knobs.downbeat;
+
+  const beat = (bpm && downbeat) ? (((ctx.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
+  const beatAmt = Math.pow(1-(beat%1), 2);
+  const tgt = [0, Math.floor(beatAmt*255), Math.floor(beatAmt*255)];
+  for (let i = 0; i < tgt.length; i++) {
+    if (ledState[i] === tgt[i])
+      continue;
+    ledState[i] = tgt[i];
+    ledConn.ws.send(`set_indicator_value,2,0,${i+3},${tgt[i]}`);
+  }
+  // ledConn.ws.send(`set_indicator_value,2,0,3,${0}`);
+  // ledConn.ws.send(`set_indicator_value,2,0,4,${Math.floor(beatAmt*255)}`);
+  // ledConn.ws.send(`set_indicator_value,2,0,5,${Math.floor(beatAmt*255)}`);
+};
+
 if ('serviceWorker' in navigator) {
   if ('program' in qs) {
     navigator.serviceWorker.register("sw.js");
@@ -518,3 +834,17 @@ if ('serviceWorker' in navigator) {
       });
   }
 }
+
+if ('ledSign' in qs) {
+  const ledFrame = document.createElement('iframe');
+  ledFrame.src = '/ledsign/';
+  ledFrame.style.display = 'none';
+  document.body.appendChild(ledFrame);
+}
+
+window.addEventListener('sourcechange', e => {
+  if (e.detail.indexOf('/ledsign/') != -1)
+    e.preventDefault();
+});
+
+document.body.classList.add('ready');

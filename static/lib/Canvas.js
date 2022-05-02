@@ -4,8 +4,8 @@ export default class Canvas {
     this.initFn = initFn;
     const glOpts = {
       alpha: false,
-      depth: false,
-      antialias: false,
+      antialias: true,
+      desynchronized: true,
       ...opts,
     };
     this.gl = canvasEl.getContext('webgl2', glOpts);
@@ -25,7 +25,8 @@ export default class Canvas {
     const canvasEl = this.canvasEl;
     canvasEl.width = canvasEl.clientWidth * devicePixelRatio / this.downscale;
     canvasEl.height = canvasEl.clientHeight * devicePixelRatio / this.downscale;
-    this.gl.viewport(0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight - this.heightOffset);
+    this.viewport = [0, 0, this.gl.drawingBufferWidth, this.gl.drawingBufferHeight - this.heightOffset];
+    this.gl.viewport(...this.viewport);
   }
 
   reinit() {

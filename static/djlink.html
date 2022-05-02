@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<script type=module>
+
+import Knobs from './lib/Knobs.js'
+
+const knobs = new Knobs(false);
+
+class WSConnection {
+  constructor(url) {
+    this.url = url;
+  }
+
+  connect() {
+    if (this.ws)
+      this.ws.close();
+    this.ws = new WebSocket(this.url);
+    this.ws.onclose = e => {
+      setTimeout(() => this.connect(), 1000);
+    };
+    this.ws.onmessage = e => {
+      this.onmessage(JSON.parse(e.data));
+    };
+  }
+}
+
+const ws = new WSConnection('ws://127.0.0.1:10505/ws');
+ws.connect();
+
+ws.onmessage = m => {
+  const master = m.filter(deck => deck.master)[0];
+  if (!master)
+    return;
+  const bpm = master.bpm * master.pitch
+  knobs.set('bpm', bpm);
+  knobs.set('downbeat', reserve.now() - master.beat_count / bpm * 60 * 1000);
+  console.log(master);
+}
+
+</script>
