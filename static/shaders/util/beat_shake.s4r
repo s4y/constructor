@@ -1,0 +1,20 @@
+fb'filt uv tex
+
+:def sample
+ { =amt
+ p
+ 0.01
+ # cdist 0.5 1 ss *
+ param'beat 1 * inv 1 mod 4 pow amt * *
+ 10 * rotZ transform =p
+ fb'filt uv tex
+ param'beatVol *
+ max
+ }
+
+0.2 sample
+0.4 sample
+-0.2 sample
+0.4 sample
+
+draw

@@ -1,0 +1,22 @@
+
+{
+0 2 dims .y / 0 vec3 p + =p
+
+
+p .x unbal sf
+vec4.1
+p .y unbal 1 step inv *
+
+fb'freq uv tex
+p .y unbal 1 step *
++
+}
+
+drawto'freq
+
+fitp
+fb'freq angle 3 * t + t 1.4 * sin - sin unbal cdist 2 / t 0.5 * - 1 mod inv vec2 tex .x =ff
+p .x abs 0.2 + 8 / sf 1 - inv p * =p
+fb'freq 0 cdist 2 / vec2 tex .x 10 /
+cdist 10 * sin 0.2 sf * 1 hsv ff 3 pow *
+draw

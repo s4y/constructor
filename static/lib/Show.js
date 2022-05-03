@@ -1,6 +1,7 @@
 import Framebuffer from '/lib/Framebuffer.js'
 import ShaderProgram from '/lib/ShaderProgram.js'
 import S4r from '/lib/S4r.js'
+import Gradual from '/lib/Gradual.js'
 
 class ScriptProgram {
   constructor(ctx, path) {
@@ -53,6 +54,8 @@ class ShowLayer {
           return this.getLastbuffer();
         },
         filt: () => {
+          if (!this.instance.usesInput("filt"))
+            throw new Error("I thought you didn't need `filt`.");
           return this.getFilterbuffer();
         },
       },
@@ -110,6 +113,11 @@ class ShowLayer {
     this.draw();
 	}
   drawRecursive(alwaysDraw) {
+    if (!alwaysDraw && this.config && this.config.if) {
+      if (!this.config.if(this.ctx))
+        return this.lastLayer.drawRecursive();
+    }
+
     let topLayer = this;
     while (topLayer && (topLayer.usesFilt || topLayer.usesLast))
       topLayer = topLayer.usesFilt ? null : topLayer.lastLayer;
@@ -141,11 +149,6 @@ class ShowLayer {
       this.getFilterbuffer().drawInto(() => {
         lastLayer.drawRecursive(alwaysDraw);
       });
-    }
-
-    if (!alwaysDraw && this.config && this.config.if) {
-      if (!this.config.if(this.ctx))
-        return false;
     }
     if (this.framebufferLoop) {
       this.framebufferLoop[1].drawInto(() => {
@@ -221,7 +224,10 @@ export default class Show {
   async reload(changedPath) {
     const r = await fetch(this.path);
     const text = await r.text();
-    const config = new Function(text)();
+    const globals = {
+      Gradual,
+    }
+    const config = new Function(...Object.keys(globals), text)(...Object.values(globals));
     const oldScenes = this.scenes;
     this.scenes = {};
     let anythingChanged;

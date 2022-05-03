@@ -23,6 +23,9 @@ export default class Gradual {
   get value() {
     return this.currentValue;
   }
+  setImmediate(value) {
+    this.currentValue = this.targetValue = value;
+  }
   valueOf() {
     return this.value;
   }

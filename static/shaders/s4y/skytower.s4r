@@ -1,0 +1,35 @@
+:def sd { =p
+ p =op
+ p p .z -0.1 * rotZ transform =p
+ p 1 * =p
+ p 2000 0.5 + 6 t -10 * vec3 + =p
+ p 1 3 1 vec3 / =p
+ # p 0.01 * p .y 10 / abs fsf 10 * 0.0 + * p .y 0.01 * sin * p .zyx sin + =p
+ # p length p .x abs 100 / 1 mod fsf 0.1 * 1.5 + -
+ # p .xy 5 * p .zy 2 * sin * cos 0.1 * length +
+ }
+
+
+PI 1.5 / aspect 0.3 10 perspectiveProj inverse =trns
+p trns transform normalize =dir
+:def project dir * p trns transform +
+
+{
+1
+:loop 20
+ dup project sd 0 max +
+=dist
+
+dist project estimateNormal =norm
+
+dist 0 100 ss
+
+vec4.1
+draw
+
+bail
+
+dist 0.01 * 1 1 hsv
+norm 1 1 0 vec3 dot *
+500 3 dist smoothstep *
+draw

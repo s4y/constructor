@@ -1,0 +1,34 @@
+{
+p =op
+
+
+p =op
+{
+# fitp
+# p t 0.1 * rotZ transform =p
+p { fitp p 0.1 mod - } =p
+fb'last { op =p uv } tex
+=bri
+
+op t rotZ transform =op
+
+{
+{
+op unbal 20 * 1 mod bal =p
+
+cdist bri step
+
+}
+
+dup .x
+1 1 1 hsv
+ 
+*
+
+fb'last uv tex .x # sf 2 pow *
+
+}
+
+fb'last uv tex swap blend
+ 
+draw

@@ -1,0 +1,5 @@
+param'beat 1 mod
+inv 2 pow
+vec4.1
+{ fitp cdist } 0.4 2 ss *
+draw

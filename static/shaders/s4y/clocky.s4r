@@ -1,0 +1,22 @@
+{
+fitp
+cdist
+0.5 param'midiBeat 0.1 * +
+angle 2 * t + sin unbal dup sf 0.5 * + +
+0.5 * 
+step
+cdist 0.1 * t + 1 1 hsv *
+param'midiBeat *
+
+}
+
+p 0.9 1 1 vec3 * =p
+
+fb'f uv tex 1 255 / - +
+
+p 1.1 1 1 vec3 * =p
+fb'f uv tex 1 255 / - -
+
+drawto'f
+
+fb'f uv tex draw

@@ -1,0 +1,14 @@
+fitp
+{
+p 1 aspect'snapshot / 8 1 vec3 * =p
+fb'snapshot uv tex
+.rgb rgb2hsv
+.z
+0.8 step 0.2 *
+vec4.1
+}
+draw
+
+param'snapshotFlash 0.4 *
+vec4.1
+draw

@@ -1,0 +1,38 @@
+t 0.5 * =t
+
+{
+
+fitp
+p 2 * =p
+1 # { p 10.7 + =p cdist } 4 * t + sin
+p .x p .y 0.7 * + t 0.9 * + sin *
+p .x -0.69 * p .y + t -0.88 * + sin *
+p .x -0.69 * 2 - p .y 15 + * t -0.88 * + sin *
+p .x -0.69 * 5 + p .y 2 - * t 0.48 * + sin *
+} =pinch
+
+
+# pinch unbal vec4.1 draw bail
+
+
+fitp
+# 9 t 1.1 * sin unbal 1 + * =n
+5 2 0.1 ssf * + =n
+3 =m
+# 3 3 cdist 10 / ssf * + =n
+
+
+p 2 / =p
+
+# p 1 pinch dup sf * 0.5 * - * =p
+0
+:loop 40 angle n /
+ + n * m * sin m n * 2 + /
+ cdist 0.5 * + sin unbal
+ t 0.1 * +
+ PI 3 * * sin unbal
+
+dup 0.1 * swap cdist 2 pow inv swap =bri 1 hsv
+vec4.1 bri *
+
+draw

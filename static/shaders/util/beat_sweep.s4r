@@ -1,0 +1,11 @@
+p 0 0.3 0 vec3 + =p
+
+# p .y unbal param'beat 1 mod param'beatAmt * + 1 + 2 mod 2 - unbal
+
+p .y param'beat 0 *  + unbal 1 mod bal # param'beatAmt * + 1 + 2 mod 2 - unbal
+
+abs inv
+# param'beat 4 / 1 mod *
+1 0.05 fsf inv * 1 ss
+0 0.9 0.5 hsv *
+draw

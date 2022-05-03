@@ -1,0 +1,21 @@
+{
+fitp
+
+:def wave
+ cdist 50 * param'beat 2 / PI * 2 * - sin
+
+{ p -1 1 0 vec3 t sin * 0 sf * + =p wave }
+# { p +1 -1 0 vec3 t 2.1 * sin * 0.2 sf * + =p wave } +
+
+=bri
+
+bri 0 step 2 3 / * 1 1 hsv bri abs
+1 pow 0.1 ssf *
+*
+
+}
+# fb'f uv tex 0.95 * max
+
+drawto'f
+
+fb'f uv tex draw

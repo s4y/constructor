@@ -1,0 +1,63 @@
+param'go 10 * =t
+# param'beat dup 0.2 - PI * 2 * sin unbal 0.2 * - t + 0.7 * =t
+# param'beat =t
+
+:def sceneDistance { =p p
+  dup =op
+  # 0.5 rotY transform =p p
+  # p proj_mat transpose transform =p
+  0 0 t 0.1 * vec3 -
+  =p p
+  p .z 9 * sin 0.1 * p + =p
+  p .x 60 * sin 0.1 * p + =p
+  p .z 0.1 * rotZ transform =p p
+  p =pp
+  0.5 + 1 mod 0.5 - =p p
+  pp p - .z =which
+  which 10 * rotZ transform =p p
+  0.27 0.21 0 vec3 +
+  # param'gRotX rotX
+  # param'gRotY rotY *
+  # param'gRotZ rotZ *
+  # transform =p p
+  0.02 op .z 3 + 5 / -1 * 0 1 clamp *
+  sdSphere
+  }
+
+{
+p =op
+
+p inv_proj_mat transform normalize =direction
+
+:def marchOnce direction * p + sceneDistance
+
+2
+:loop 40
+ dup marchOnce 0 max +
+=dist
+
+dist direction * p + inv_camera_mat proj_mat * transform marchOnce
+=surfDist
+
+dist 29 / inv =bri
+
+bri
+0.3 1 ss
+vec4.1
+draw
+bail
+
+# dist 20 5 ss =bri
+surfDist 0.2 mod surfDist 1 hsv bri *
+# 0.8 bri 0.9 * p .y abs sf 0.1 * + - 0.2 0 1 clamp 5 pow 1 hsv
+bri 0.5 1 ss *
+}
+
+5 *
+
+draw
+bail
+
+fb'f uv tex 0.9 * +
+drawto'f
+fb'f uv tex draw

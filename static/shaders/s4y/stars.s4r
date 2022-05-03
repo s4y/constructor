@@ -1,0 +1,44 @@
+:def fillp p 1 aspect 1 vec3 / =p
+:def angle p .x p .y atan PI / 2 / 0.5 +
+
+90 =rsteps
+45 =tsteps
+
+param'beat =t
+t 8 / =t
+# t dup 1 mod dup 10 pow + + =t
+1 =xspeed # t 1 mod PI * 1 * sin 2 spow =xspeed
+t xspeed 0.2 * - =t
+
+
+fillp
+{
+
+:def stars { =ofs
+ p .xy length * t + 1 mod ofs 0.1 * +
+ 0.5 pow t 0.1 * - =u u dup 1 rsteps / mod -
+ p .x p .y + ofs 0.1 * + =v v dup 1 tsteps ofs 1 + / / mod - rsteps / +
+ 5442 * PI * ofs + sin unbal 0.99 step inv
+ =en
+ 
+ u rsteps * PI * 2 * cos unbal inv
+ v tsteps * PI * 2 * sin *
+ en *
+ }
+
+0 0 0 0 vec4
+{
+cdist 1 0.05 cdist * - * =cdist
+:loop 20 { dup .x =i .yzw =rgb
+ i 1 +
+ cdist 1 1 0.01 xspeed * + 1 mix * =cdist i stars rgb .r max
+ cdist 1 1 0.01 xspeed * + 1 mix * =cdist i stars rgb .g max
+ cdist 1 1 0.01 xspeed * + 1 mix * =cdist i stars rgb .b max
+ vec4
+ }
+} .yzw
+
+.x vec4.1
+# 0 0.5 cdist smoothstep *
+draw
+

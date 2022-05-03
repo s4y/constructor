@@ -1,0 +1,93 @@
+t 5 * =t
+
+:def circ { =hue
+ fitp
+ cdist 4 *
+ 0.1 sf
+ step
+ hue 1 1 hsv *
+ }
+
+{ p 0.5 t 0.9 * sin * 0.5 t 0.8 * sin * 0 vec3 + =p 4.5 6 / circ }
+
+:def sample
+ fb'f uv tex
+
+# sample { 2 dims / 0 vec3.2 p + =p sample .r 0.1 step inv } +
+# sample { -2 2 vec2 dims / 0 vec3.2 p + =p sample .g 0.1 step inv } +
+
+# 2 256 / -
+
+
+drawto'f
+
+{
+fitp
+# p t rotZ transform =p
+# p dup 0.01 mod - =p
+0
+{ p +0.1 t 0.2 *  sin * 0 0 vec3 + =p cdist 0.2 0.1 ssf 1 pow * step 0 6 / 0 + 1 1 hsv * }
+{ p 0.0 -0.3 t 0.4 * sin * 0 vec3 + =p cdist 0.2 0.2 ssf 1 pow * step 2 6 / 0 + 0 1 hsv * + }
+{ p -0.1 t 0.6 * sin * 0 0 vec3 + =p cdist 0.2 0.3 ssf 1 pow * step 4 6 / 0 + 1 1 hsv * + }
+}
+
+{
+
+# p dup 0.01 mod - =p
+
+0 0 0 0 vec4
+
+{
+-1 0 vec2 dims / 0 vec3.2 =delt
+{ p 256 256 / * delt + =p fb'f uv } tex =l l .r l .g l .b + 2 / - 0.3 step inv l *
+} min
+
+{
+1 0 vec2 dims / 0 vec3.2 =delt
+{ p 256 256 / * delt + =p fb'f uv } tex =l l .b l .g l .r + 2 / - 0.3 step inv l *
+} min
+
+{
+0 1 vec2 dims / 0 vec3.2 =delt
+{ p 256 256 / * delt + =p fb'f uv } tex =l l .g l .b l .r + 2 / - 0.3 step inv l *
+} min
+
+# =p
+fb'f uv tex  # 1 256 / -
+max # 1 256 / - 0 max
+} 1 mod max
+
+drawto'f
+
+fb'f uv tex
+# inv
+draw
+
+
+bail
+
+p .y unbal 1 dims .y / step =sw
+
+p .x unbal fsf sw *
+0 0 1 vec4
+fb'sh uv 1 dims .x / 0.5 dims .y / vec2 - tex
+fb'sh uv 0 dims .x / 0.5 dims .y / vec2 - tex +
+fb'sh uv -1 dims .x / 0.5 dims .y / vec2 - tex +
+3 /
+sw inv * +
+
+drawto'sh
+
+fitp
+0 0 0 0 vec4
+fb'sh 0.0 cdist 500 dims .x / * vec2 tex .r 0 6 / 1 1 hsv swap 3 * 4 pow * +
+{ p 0.5 0 0 vec3 + =p fb'sh 0.2 cdist 500 dims .x / * vec2 tex .r 2 6 / 1 1 hsv swap 1.3 * 4 pow  * + }
+{ p -0.5 0 0 vec3 + =p fb'sh 0.4 cdist 500 dims .x / * vec2 tex .r 4 6 / 1 1 hsv swap 2 * 8 pow  * + }
+# 1 * 1 mod 2 * 
+
+# bri 0 step 2 3 / * 0.6 0.5 hsv bri abs *
+
+drawto'f
+
+
+fb'f uv tex draw

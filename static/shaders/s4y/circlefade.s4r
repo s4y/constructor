@@ -1,0 +1,4 @@
+0 0 0 1 vec4
+fitp
+cdist 0.95 step inv *
+draw

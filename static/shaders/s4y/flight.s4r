@@ -1,0 +1,30 @@
+
+:def st
+ p .x p .y PI * * sin + 1 * sin unbal - sin
+
+{
+p 0.01 rotZ transform =p
+fb'f uv tex
+} =l
+l .rgb 0.1 * p / =p
+
+0
+:loop 10 {
+ =x
+ # p x -3 * 0 =p
+ x st
+ }
+=x
+
+p 1 vec4.2
+sin unbal
+l 1 255 / - x inv +
+1 mod
+
+# p x sin unbal + 1 vec4.2
+# 10 * sin unbal
+drawto'f
+
+fb'f uv tex =t
+t .z t .x 0.7 hsv t .y *
+draw

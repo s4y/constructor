@@ -1,0 +1,8 @@
+{
+p -0.02 0.3 0 vec3 + =p
+# p 1 p .x abs sf 0.4 * 1 swap - 1 vec3 * =p
+fitp
+0.3 0.1 cdist smoothstep
+p .x abs sf 0.0 * t 0.01 * + 0.5 0.5 hsv *
+draw
+}

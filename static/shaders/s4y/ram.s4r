@@ -1,0 +1,30 @@
+
+:fn inverse 1
+:fn smoothstep 3
+:def ss { =x =y =z y x z smoothstep }
+
+
+
+fitp
+# p 0 -2 -0.5 vec3 + =p
+# p
+# t 0.01 * rotX
+# PI 2 / aspect -100 100 perspectiveProj inverse *
+# transform =p
+
+
+p .x p .y 1 + *
+p .y 0.8 +
+p .z
+vec3
+=p
+
+
+angle PI / 2 / 0.5 + =a
+cdist 10 * dup 1 mod - =d
+1 d / t 0.1 * * a + =a
+
+a d * 10 * 1 mod 0.5 - abs 0.44 0.45 ss
+0 d 10 / 1 mod fsf 1 hsv
+*
+draw

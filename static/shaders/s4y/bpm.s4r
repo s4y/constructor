@@ -1,0 +1,34 @@
+fitp
+
+p .x abs p .y abs + dup 0.2 step =diamond 0.21 - abs 0.01 step
+param'beat 1 mod 0.7 * 0.3 + inv * 0.5 *
+
+p .x abs p .y abs + 0.3 + 0 max dup =d abs 
+param'beat 0.5 + dup PI * 2 * sin unbal 0.3 * - + 1 mod 0.02 step d 0 step inv *
+p .y abs 0.1 step *
+
+d p .y abs 0.1 step *
+0.5 - abs
+0.02 step
+param'beat 1 mod inv *
+max
+
+p .x abs p .y abs + 0.2 - abs param'beat 0.5 + dup PI * 2 * sin unbal 0.2 * - + 1 mod 0.02 0.005 ss
+p .y abs 0.05 step *
+
+d p .y abs 0.05 step *
+0.5 - abs
+0.02 step
+param'beat 0.5 + 1 mod inv *
+max
+
+
+max
+diamond inv *
+max
+
+cdist 0.005 step
+max
+
+vec4.1
+draw

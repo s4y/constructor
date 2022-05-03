@@ -1,0 +1,40 @@
+:def sd {
+  0.5 /
+  0 0 3 vec3 +
+  t sin 1.4 * rotY t 1.6 * rotX * transform
+  dup =op
+  0.6 1 1 vec3 * 
+  =p
+  p .x op .xz 0 0 vec2 distance dup =cd PI * 3.5 / cos unbal 8 pow 1.9 * p .y - p .z vec3
+  =np
+  np 1 sdSphere
+  p 1 sdSphere max 4 /
+  }
+
+fitp
+
+0 0 -1 vec3 =direction
+:def marchOnce direction * p + sd
+
+0
+:loop 100
+ dup marchOnce 0 max +
+=dist
+
+dist direction * p +
+=hitP
+
+hitP estimateNormal
+=norm
+
+dist marchOnce
+=surfDist
+
+:def bg { =p
+ 0.6 p .y 0.5 * 0.5 + 1 hsv
+ }
+
+norm 1
+vec4.2
+surfDist 1 256 / step *
+draw

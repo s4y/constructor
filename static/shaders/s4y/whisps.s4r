@@ -1,0 +1,45 @@
+t 0.1 * param'go + 0.1 * =t
+
+{
+fitp
+p .x abs p .y abs p .z vec3 =p
+p 0 angle ssf 0 vec3 1.1 * + =p
+p t 0.1 * rotZ transform =p
+p -0.01 0.5 t 0.01 * sin unbal * 0 vec3 + =p
+
+:def iter
+  dup p swap rotZ transform =p
+  {
+  =v # p 1.4 t 0.00 * v sin 0.00 * + + v sin 0.00 * + rotZ transform 0.0 +  =p
+  p p -0.1 * angle v 1.9 * + sin 2 * v * + t 0.04 * + 3 * sin unbal + length PI 0.4 * * sin unbal
+  }
+
+fitp
+
+p 0 vec4.2
+:loop 10
+ dup .xyz =p .w iter p swap vec4.2
+.w
+
+}
+
+0.01 - 
+10 pow
+
+=bri
+
+
+bri 2.0 * 0.7 - 0.8 1 hsv bri 2.0 pow *
+
+draw
+bail
+
+{
+p 0.99 * =p
+fb'f uv tex 0.9 * max
+}
+
+drawto'f
+
+fb'f uv tex
+draw

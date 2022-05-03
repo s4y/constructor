@@ -1,0 +1,14 @@
+0 0 0 1 vec4
+
+p .y abs
+p .x abs
+max
+
+# cdist
+# +
+# 3 /
+0.8 1 ss
+
+*
+
+draw

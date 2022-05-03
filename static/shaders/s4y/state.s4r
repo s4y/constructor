@@ -1,0 +1,15 @@
+
+0.1 0.01
+p .y p .x 10 * p .y fsf * t + sin t sin * 0.1 * + abs
+smoothstep
+
+p .x abs sf 0.1 * 0.1 sf 1 hsv *
+
+{
+p 1 1.0 0.5 0.1 sf 0 * 10 pow * - 1 vec3 * =p
+fb'f uv tex 0.9 * +
+}
+
+drawto'f
+
+fb'f uv tex draw

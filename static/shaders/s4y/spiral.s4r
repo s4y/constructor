@@ -1,0 +1,9 @@
+fitp
+cdist
+angle PI / 2 / + param'beat 0.1 * -
+10 * 
+PI * sin 0 step
+
+vec3.1
+1 vec4.2
+draw

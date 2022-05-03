@@ -1,0 +1,19 @@
+:def wave { =n
+ p .y unbal
+ p .x 1 n 10 * + * t 1.1 n 10 * + sin * + sin n / 0.1 * n 10 / ssf * +
+ n step }
+
+0.1 =n
+
+0 0.1 vec2
+:loop 20 { =in
+ in .x in .y wave in .y inv * max
+ in .y 1 42 / + vec2 }
+.x
+
+1 * 1 pow # 0.5 +
+=bri
+
+bri 2 * 0.8 bri hsv 
+# bri -0.2 * 0.1 + t 0.0 * + bri 10 / 1 mod ssf 1 pow 1.2 swap - bri 1 + hsv draw
+draw

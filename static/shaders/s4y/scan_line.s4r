@@ -1,0 +1,15 @@
+:def line
+ p .y unbal param'beat + 1 mod abs
+
+fb'last uv tex
+line 0.2 0.1 ss *
+
+fb'f uv tex 10 255 / - blend
+drawto'f
+
+fb'f uv tex
+
+line 0.01 0 ss
+vec4.1 max
+
+draw

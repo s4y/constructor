@@ -1,0 +1,28 @@
+{
+fitp
+# p rotZ transform =p
+{
+p 2 / =p
+p .x abs p .y abs max
+} =dizt
+
+dizt fsf
+dizt 0.1 step *
+=yee
+0 0.5 yee hsv
+yee *
+
+{
+1 cdist sf 0.5 * - p * =p
+# 0.4 sf 0.01 * p + =p
+p 0.01 rotZ transform =p
+fb'f uv tex 0.9 *
+}
+0.05 t 0.0 * + 0.0 0 vec3 addHsv
++
+drawto'f
+
+
+}
+
+fb'f uv tex draw

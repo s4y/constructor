@@ -1,0 +1,47 @@
+param'go .01 * =t
+
+:def sceneDistance { =p
+  p 1 * =p
+  # p camera_mat transform =p
+  p t rotZ t rotX * transform =p
+  # p param'beat 8 / rotX transform =p
+  p 0 p .x sf 0 vec3 + =p
+  # p t 0.1 * 0 0 vec3 + =p
+  # p t rotY param'sndGo 0.0 * rotZ * t 4 * rotX * param'sndGo 0.5 * rotZ * transform =p p
+  # p 0 p .y 1 mod ssf 0.01 * 0 vec3 -
+  p 0.5 mod 0.25 - =p
+  p length 1.3 * 0.4 +
+  }
+
+{
+p =op
+
+p
+p inv_proj_mat transform normalize =direction
+
+:def marchOnce direction * p + sceneDistance
+
+-5
+:loop 80
+ dup marchOnce +
+=dist
+
+dist direction * p inv_proj_mat transform + dup =hitP
+hitP marchOnce =surfDist
+
+dist 2 / sin unbal
+# dup 1 * 0.0 1 hsv *
+# dist *
+vec4.1
+
+# surfDist
+
+draw
+bail
+
+dist 30 / inv =bri
+0.8 bri 0.9 * p .y abs sf 0.1 * + - 0.2 0 1 clamp 10 pow 1 hsv
+bri 0.5 1 ss *
+}
+
+draw

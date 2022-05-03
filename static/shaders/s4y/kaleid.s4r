@@ -1,0 +1,34 @@
+p .x abs p .y p .z vec3 =p
+
+# p angle dup =a a PI 1 / mod + rotZ transform 0.7 * =p
+# p a PI 1.5 / mod PI 3 / - sign * =p
+
+# p t 0.1 * sin 0.5 * rotZ transform =p
+fb'filt uv tex
+
+# 0 1 1 vec3 mulHsv
+0 -1 c .r sf 2 pow + 0 vec3 addHsv
+# 0.1 1 0 vec3 addHsv
+
+# .r 0.5 +
+# cdist 0.5 - 2 pow inv *
+# 4 pow
+
+# vec4.1
+
+# param'midiBeat 0.01 * 1 1 hsv *
+
+# =c
+# c
+# 0 1 1 hsv c .r * # c .r c .g 0.1 * 0.1 sf 0.5 * + 1 * 2 pow 1 * cdist 0.2 * + t 0.1 * + 0.5 1 hsv
+# c .r 1.5 * t 0.1 * + PI * 2 * sin unbal 2 pow 0.5 * 0.5 + *
+# c .r 1.8 pow *
+
+{
+p 0.99 * =p
+fb'f uv tex 0.95 * blend
+}
+drawto'f
+fb'f uv tex
+# .r vec4.1
+draw

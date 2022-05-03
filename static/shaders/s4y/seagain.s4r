@@ -1,0 +1,23 @@
+:def sdworld {
+ 0 0 2 vec3 +
+ t rotX t 0.1 * rotY * transform =p p
+ # p .y 10 * sin p .z sf * 0.3 * +
+ 0.3 vec3.1 sdBox 2 /
+ p 10 * tan length *
+ }
+
+
+PI 1.5 / aspect 0.1 10 perspectiveProj inverse =invProj
+p invProj transform =dir
+
+:def project dir * p invProj transform +
+
+0
+:loop 40
+ dup project sdworld +
+=dist
+
+dist project sdworld =hitdist
+dist hitdist 100 * dist 1 sin unbal hsv
+# hitdist 0.1 step *
+draw

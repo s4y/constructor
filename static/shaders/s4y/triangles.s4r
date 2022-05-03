@@ -1,0 +1,30 @@
+fitp
+
+{ p 2.5 + =p cdist 2 * t - sin }
+{ p 4.5 -3 3 vec3 - =p cdist 2 * t 10.1 * - sin } +
+{ p .x p .y 0.2 * * t 1.9 * + sin } -
+{ p .x -0.3 * p .y 0.5 * * sin } + 
+sin 0.07 sf 32 pow * =pinch
+p pinch 2 + * =p
+
+p p .y unbal 1.9 - 1 1 vec3 / =p
+
+p t 0.01 * + =p
+
+p t 0.01 * rotZ transform =p
+p 2.4 * =p p =op
+p 0.5 + 1 mod 0.5 - =p
+p .x p .y +
+p 0.1 ssf inv rotZ transform =p
+dup 0 step =whichtri
+whichtri dup 2 / 1 mod fsf + =whichtri
+op p - .x whichtri + =whichtri
+abs 2 /
+p .x abs inv bal 2 / min
+p .y abs inv bal 2 / min
+0.01 step
+=bri
+
+whichtri 0.00 * 1.0 bri hsv
+0.2 * 
+draw

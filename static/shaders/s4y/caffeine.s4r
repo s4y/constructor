@@ -1,0 +1,58 @@
+
+p .y t 40 * sin + p .x t 10 * + 5 * sin 0.3 * + abs 0.031 0.02 ss
+dup 0.1 mod fsf *
+=bri
+
+
+p .y sf 0.1 * 1 1 hsv bri *
+
+{
+p 0.9 * =p
+fb'f uv tex 0.99 * +
+}
+
+drawto'f
+
+fb'f uv tex drawto'ff
+
+# fb'ff uv tex draw
+# bail
+
+
+
+:def sd { =op
+ op =p
+ p 0 0 -3 vec3 + =p
+ p t 0.1 * rotX t 0.1 * rotY * transform =p
+ p 0.5 + =p
+ p 0.5 + 1 mod 0.5 - =p
+ p p .x 5 / sf rotX transform =p
+ p
+ 0.3 vec3.1 sdBox
+ }
+
+0 0 1 vec3 =dir
+# PI 2.5 / aspect 0.3 10 perspectiveProj inverse =trns
+# p trns transform normalize =dir
+:def project dir * p +
+
+{
+fitp
+
+0
+:loop 80
+ dup project sd 0 max +
+=dist
+
+dist project sd =surfDist
+
+dist project estimateNormal =norm
+
+fb'ff p norm + .xy 5 / unbal 1 mod tex
+
+0.6 1 0.6 t sin * t sin 1 vec3 normalize norm dot hsv +
+
+dist 20 19 ss *
+
+surfDist 1 64 / 0 ss *
+draw

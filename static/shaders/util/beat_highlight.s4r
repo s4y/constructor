@@ -1,0 +1,13 @@
+param'beat param'mult * 1 mod dup =thump
+inv 2 pow
+=flash # { fitp cdist } 0.0 2 ss * =flash
+
+fb'filt uv tex
+dup
+flash +
+4 vec4.1 pow
+thump inv
+param'beatVol *
+mix
+# 0 bri -1 * bri vec3 addHsv
+draw

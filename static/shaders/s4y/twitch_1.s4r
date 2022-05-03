@@ -1,0 +1,30 @@
+
+
+
+
+:def one
+ p .x 2 * p .y 2 * t + sin 5 * + t 1.1 * + sin unbal
+
+{
+one
+p 0.2 t -0.2 * + rotZ transform =p one +
+p 0.8 t -0.1 * + rotZ transform =p one +
+p -0.2 t 0.15 * + rotZ transform =p one +
+p 0.4 t 0.2 * + rotZ transform =p one +
+} sin
+
+unbal
+10 pow 
+=bri
+
+bri
+t 0.05 * bri sf + 0.4 1 hsv *
+
+fb'f uv tex 0.9 * + 
+=coord
+fb'last coord .xz inv 5 / 0.1 ssf 10 pow * uv + 1 mod tex
+
+drawto'f
+fb'f uv tex draw
+
+

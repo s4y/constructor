@@ -1,0 +1,113 @@
+{
+fitp
+p =op
+p dup 0.1 mod - =p
+
+
+p .x p .y * sf =freq
+freq 1 p .y abs 8 pow ssf hsv
+op .x 10 * 0.5 + 1 mod 0.5 - abs
+op .y 10 * 0.5 + 1 mod 0.5 - abs min =yee
+0 0.1 yee smoothstep * # 0.9 1 yee smoothstep *
+drawto'ff
+
+}
+
+{
+# p t rotX transform =p
+p .y t 0.1 * + tan p * 0.5 t 0.2 * + + 1 mod 0.5 - =p
+
+
+p .x abs =coord
+coord ssf 1 1 hsv
+coord fsf p .y abs unbal swap step t 0.1 * 0 1 hsv * *
+
+}
+
+:def bg {
+  p 0.99 * =p
+  fb'f uv tex
+  0.001 0.1 0 vec3 addHsv
+  0.9 0.1 fsf * *
+  }
+
+bg
+blend
+drawto'f
+
+
+fb'f uv tex 0.5 * draw
+
+bail
+
+
+:def sdO {
+ 0 0 2 vec3 +
+ t 0.1 * rotY 0.2 t * rotX * transform
+ =boxP
+ # boxP .y .5 * fsf 0.2 * 1 + 0 max 1 1 vec3 boxP * =boxP
+ boxP
+ boxP 0.5 sdSphere
+ boxP 0.4 vec3.1 sdBox 0.1 sf 4 pow 0 1 clamp 1 + mix
+ vec4.2
+ }
+ 
+PI 1.5 / aspect 0.1 10 perspectiveProj inverse =invProj
+p invProj transform =dir
+
+:def project dir * p invProj transform +
+
+0 0 0 0 vec4
+:loop 80
+ { .w dup project sdO =r r .w 0 max + r .xyz swap vec4.2 }
+dup
+.w =dist
+.xyz =boxP
+
+dist project =hitP
+
+hitP sdO .w =surfDist
+
+{
+:def sd sdO .w
+hitP estimateNormal
+} =norm
+0.5 =bri
+
+# norm 0 1 0.5 vec3 dot 
+# =l
+# 
+# 1 0 l hsv
+
+0 0 0 1 vec4
+
+# {
+# boxP 4 * 0.5 + 1 mod 0.5 - =p
+# fitp
+# fb'ff uv tex
+# }
+
+# {
+# boxP 2 * =p
+# fb'ff uv tex +
+# }
+
+{
+hitP norm 1 1 -1 vec3 * + =p
+bg +
+# fb'f uv tex +
+}
+
+norm 0 1 0.2 vec3 dot 0.3 + 0 1 clamp 4 pow 0 max
+0 1 0.4 hsv * +
+
+20 10 dist smoothstep *
+1 1024 / 0 surfDist smoothstep *
+
+draw
+
+
+
+
+# p .x unbal p .y unbal 1 hsv
+# draw

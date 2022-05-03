@@ -1,0 +1,12 @@
+param'amt =amt
+
+p .y 1.5 - amt 2.9 * + abs
+p .x cos 0.2 * -
+0.1 - 0.4 0.1 ss
+=sweep
+
+fb'filt uv tex =filt
+0 1 filt inv  .r 0.1 pow hsv filt sweep inv mix
+0 0 0 1 vec4 sweep inv amt 8 invpow * mix
+
+draw

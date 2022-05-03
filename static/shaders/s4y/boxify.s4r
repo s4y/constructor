@@ -1,0 +1,6 @@
+p 1.5 * =p
+fb'filt uv tex
+
+p .x abs p .y abs max 1 step *
+
+draw

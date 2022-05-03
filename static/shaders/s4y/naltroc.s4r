@@ -1,0 +1,55 @@
+
+
+p .y p .x t 0.1 * + 10 *  sin 0.7 p .x unbal fsf * * + abs inv 0.99 1 ss
+=bri
+bri 0.9 * 0.5 + 1 1 hsv bri *
+vec4.1
+
+{
+p 0.995 * =p
+fb'f uv tex 0.99 * +
+}
+
+drawto'f
+
+fb'f uv tex draw
+
+
+
+bail
+
+
+p .x unbal sf 0.1 + 4 pow
+
+p .y unbal 2 dims .y / step =ss
+
+ss *
+
+{
+p 0 2 dims .y / 0 vec3 - =p
+fb'snd uv tex
+ss inv * +
+}
+
+vec4.1 drawto'snd
+
+
+{
+fb'snd uv tex .x -1 * 
+0
+0 vec3 p + =p
+fb'snd uv tex
+p .y 1 step *
+drawto'snd2
+}
+
+{
+fitp
+fb'snd2 angle t 0.1 * + 1 mod PI / 2 / 0.5 + cdist vec2 tex
+
+1 0.9 cdist smoothstep *
+# p .y unbal * 2 pow
+0 0.5 1 hsv *
+}
+
+draw

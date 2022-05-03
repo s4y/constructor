@@ -1,0 +1,42 @@
+
+t 10 * =t
+
+p .y abs
+p .x abs *
+10 *
+t +
+sin
+unbal
+5 / 1 { fitp cdist } abs sf hsv
+
+param'beat 4 / 1 mod inv *
+
+{
+p 0.99 * =p
+fb'f uv tex
+
+0.1 0 0 vec3 addHsv
+
+0.9 * +
+}
+drawto'f
+fb'f uv tex
+
+draw
+
+
+
+bail
+
+
+p .x abs sf 10 pow
+p .y unbal swap step
+
+{
+p 0 0.1 0 vec3 - =p
+fb'f uv tex 0.9 * +
+}
+vec4.1
+0 0.1 0 vec3 addHsv
+drawto'f
+fb'f uv tex draw

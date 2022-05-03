@@ -1,0 +1,4 @@
+param'flash =f
+f param'fade * =f
+fb'filt uv tex f +
+draw

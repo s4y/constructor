@@ -1,0 +1,33 @@
+:def delt { =uv
+  uv .y 10 * t dup 0.99 150 / 60 * 6 / mod - 10 * sin 10 * + sin
+  dup 0.9 mod -
+  }
+
+uv delt =d
+uv d d vec2 + =uv
+uv =ouv
+uv 1 mod =uv
+
+fb'filt uv tex
+uv .yx 0.75 * delt param'colorChaos 0.5 * * param'colorChaos 0 vec3 addHsv
+draw
+
+# float delt(vec2 uv) {
+#   float delta = sin(uv.y*10.+sin(((t-mod(t,(1.-(0.01))/150.*60./6.))*10.))*10.);
+#   delta -= mod(delta, 0.9);
+#   return delta;
+# }
+# 
+# void main() {
+#   commonInit();
+#   vec2 uv = p3.xy/2.+.5;
+#   // float delta = sin(uv.x*10.+sin(((t-mod(t,1./150.*60.))*10.)));
+#   float d = delt(uv);
+#   uv.y += d;
+#   uv.x += d;
+#   vec2 ouv = uv;
+#   uv = mod(uv, 1.);
+#   gl_FragColor = texture(filt, uv);
+#   // gl_FragColor.r *= 1. - d * 0.1;
+#   gl_FragColor = addHsv(gl_FragColor, vec3(delt(uv.yx * 0.75) * 0.00, .0, 0));
+# }

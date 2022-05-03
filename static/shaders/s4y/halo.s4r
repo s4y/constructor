@@ -1,0 +1,67 @@
+# 0 0 0 1 vec4
+# { fitp cdist } 0.5 0.6 ss * param'phase1 inv * 0.5 *
+# draw
+
+1 256 / =epsilon
+
+# p 0 -0.5 0 vec3 + =p
+
+param'beat 1 mod inv =beat
+
+# 1 =beat
+
+param'angelPhase 0 1 clamp =phase1
+# t 5 /  1 mod =phase1
+# 0.0 =phase1
+
+# p { fitp p } phase1 inv mix =p
+
+:def sdTorus { =t =p
+ p .xz length t - .x p .y vec2
+ length t .y -
+ }
+
+:def sceneDistance { =p
+  # p t 1.1 * rotY 10.2 rotX * transform =p
+  # p t rotX transform =p
+  p 0 0 1 vec3 + =p
+  p inv_camera_mat transform =p
+  # p 0 -0.2 phase1 * 0.0 vec3 + =p
+  p PI 2 / phase1 inv * rotX transform =p
+  p 0 -0.12 0 vec3 phase1 * + =p
+  # p param'beat 4 / PI * rotY 0.2 phase1 * rotZ * transform =p
+  p PI 5 * param'phase1 inv * rotY transform =p
+  # p op t 1 mod mix =p
+  p 0.2 0.1 phase1 mix 0.04 { p .zxy =p angle } PI / 0.5 + sf * vec2 sdTorus
+  # p 0.5 0.07 phase1 mix 0.004 0.01 phase1 mix vec2 sdTorus
+  # phase1 0 * mix
+  }
+
+{
+
+p inv_proj_mat transform normalize =direction
+
+:def marchOnce direction * p inv_proj_mat transform + sceneDistance
+
+-6 100 vec2
+:loop 40 { dup .x =dist .y =best
+ dist marchOnce dup dist + swap
+ best min
+ vec2 }
+dup .x =dist .y =best
+
+dist direction * p + marchOnce
+=surfDist
+
+best 2 * 0.02 0.05 phase1 10 pow * + 0 ss 1 pow
+0.1 0.2 phase1 * 1 hsv *
+
+surfDist 1 0 ss
+0 0.0 1 hsv *
++
+# dist 2 0 ss *
+# beat 1 0.5 mix *
+drawto'f
+}
+
+fb'f uv tex draw

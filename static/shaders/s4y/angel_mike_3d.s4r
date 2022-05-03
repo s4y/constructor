@@ -1,0 +1,163 @@
+fb'filt uv tex
+# 1.3 0 -0.7 vec3 addHsv
+# 1 3 1 vec3 mulHsv
+
+
+{
+fitp
+0.01 0 1 hsv param'phase1 *
+
+cdist 0.9 0.1 ss * swap blend
+}
+
+draw
+
+{
+vert
+
+8 vec3.1 1 vec4.2 /
+
+0.1 sf 0.4 + 1 pow 0.1 * 1 swap + *
+
+t =ot
+param'beat dup 1 mod PI * 2 * sin 1 pow 0.0 * - =t
+
+t 1 * =t # * param'beat 2 / 1 mod PI * sin unbal inv 1 pow 5 * - =t
+t param'beat 4 / 1 mod PI * 2 * sin + =t
+
+ot 10 / 2 / 0.25 + PI * 2 * sin 0.2 * 0.2 - rotX
+{
+# t 2 * =t
+t 0 - 16 mod 13.9 step =which
+0 =which
+# t PI * 1 * dup 2 / sin 2.1 * - which inv *
+# param'beat 8 / dup PI * 2 * sin 10 pow 0.0 * - 0 *
+t 8 / sin 0.5 *
+t 8 / PI * sin 0.7 * which * +
+}
+rotY *
+t 16 / PI * sin 0.1 *
+rotZ *
+0 0 -1 translate *
+=tx tx
+PI 3 / aspect 0.2 2 perspectiveProj *
+=_
+
+camera_mat *
+proj_mat
+swap *
+
+=vert
+
+loadGltf'angel_mike_nohalo =mesh
+
+{
+{
+p .zyx =p
+
+norm tx transform -1 *
+p 0.15 * + =p
+}
+
+
+# fb'filt
+# uv
+# tex
+# 0.5 *
+# .rgb 1 vec4.2
+}
+
+:fn transpose 1
+
+norm =onorm
+norm inv_camera_mat transpose transform normalize
+# norm p .x p .y + 0 step mix
+=norm
+
+onorm abs .z inv
+vec4.1
+
+
+{
+p norm - 1 / =p
+p 16 9 / 1 1 vec3 / =p
+fb'filt
+uv
+tex
+0.4 *
+.rgb 1 vec4.2
+
+}
+1 0.2 1 vec3 mulHsv
+max
+
+norm abs .z 0 step inv
+vec4.1
+*
+
+# 0
+# 0 { p 0.1 0.2 0 vec3 - =p cdist } 1 * 1 mod sf 0.3 0.0 ss
+# hsv
+# +
+# .rgb 1 vec4.2
+
+# norm
+# abs
+# 1 vec4.2
+# draw
+# bail
+
+# norm 0 0 { p .xy -0.1 -0.15 vec2 + } length dup =l 200 * sin 2 pow 0.5 * vec3 norm .z abs 0 step * - normalize =norm
+
+p 0.4 * norm - =lightp
+
+# {
+# lightp -1 param'beat PI * sin * 0.0 1.5 vec3 normalize dot 0 1 clamp 5 pow
+# =bri
+# 0.8 1 bri 0.3 * hsv
+# } +
+# {
+# lightp 1 param'beat PI * sin * 0.0 1.5 vec3 normalize dot 0 1 clamp 5 pow
+# =bri
+# 0.0 1 bri 0.3 * hsv
+# } +
+
+param'phase1 4 pow *
+
+draw
+bail
+
+# norm -1 * p 0.5 * + tx transform normalize -1.0 0.0 -2.5 vec3 normalize dot 1 pow
+# 0.1 1 1.0 hsv *
+
+# norm -1 * p 0.5 * + tx transform normalize 1.0 0.0 -2.5 vec3 normalize dot 1 pow
+# 0.1 0 1.0 hsv * +
+
+# 0.4 ssf *
+# +
+
+0.1 0.5 0 hsv
+onorm .z abs 0 step mix
+
+draw
+bail
+
+
+drawto'ff
+}
+
+{
+p 0.999 * =p
+p 0 0.01 0.2 sf * 0 vec3 + =p
+fb'f uv tex 0.0 sf * 
+}
+fb'ff uv tex 0.5 0.5 0.5 1 vec4 *
+swap blend
+drawto'f
+
+0 *
+fb'ff uv tex
+fb'f uv tex
+blend
+
+draw

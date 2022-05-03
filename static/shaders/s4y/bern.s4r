@@ -1,0 +1,18 @@
+{
+p 2 * =p
+p 0 p .x 10 * t 10 *  + sin 0.1 * 0 vec3 + =p
+
+load'images/bernie.jpg uv tex
+p .x abs p .y abs max 1 0.9 ss *
+
+}
+
+{
+p 0 0.1 p .x sf abs * 0 vec3 - =p
+p 0.99 * =p
+fb'f uv tex 0.9 *
+dup .b fsf 1 0 vec3 addHsv max
+}
+drawto'f
+
+fb'f uv tex draw

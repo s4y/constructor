@@ -1,0 +1,49 @@
+fb'last uv tex draw
+
+
+{
+
+0 =yee
+
+:def step
+ yee 1 + =yee
+ { 
+ p yee t * sin 0.1 * rotZ transform =p
+ p .x p .y 3 * t yee + + sin 0.1 * + 5 / sin unbal ssf
+ }
+
+
+step
+step +
+step +
+
+sin 10 * unbal t 0.1 * +
+0.5
+1
+hsv drawto'f
+
+}
+
+{
+fitp
+p 2 * =p
+p t 0.1 * rotZ transform =p
+0.7 =howmuch
+p howmuch + howmuch 2 * mod howmuch - =p
+p .y sf 0.2 * 0 0 vec3 1 swap - p * =p
+p .x 1.8 * abs p .y 0.5 abs - +
+0.1 step
+p .y -0.3 step inv min
+} =tri
+
+fb'f uv tex =t
+fb'last t .xy tex t - tri *
+# {
+# p 0.99 * =p
+# p 0.01 rotZ transform =p
+# fb'ff uv tex 0.9 * blend
+# }
+# drawto'ff
+draw
+
+# fb'ff uv tex 0.7 * draw

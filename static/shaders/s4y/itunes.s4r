@@ -1,0 +1,6 @@
+p .y
+p .x 10 * t 1 * + sin 0.1 * +
+p .x 0.5 - abs sin sf +
+abs
+2 dims .y / step
+vec4.1 draw

@@ -1,0 +1,29 @@
+fitp
+
+t 2 * =t
+p 5 * =p
+
+:def box
+ cdist
+ p cdist dup ssf 0.6 * inv - * =p
+ t 0.1 * p .x sin * -
+
+:def once
+ p 0.1 - cdist ssf 0.1 * - =p
+ p t 1.0 * rotZ transform =p
+ box
+ dup ssf 0.01 * +
+ dup 0. t sin * * 1 + p * =p
+
+once
+once + once + once + once + once +
+once + once + once + once + once +
+once + once + once + once + once + once +
+
+sin unbal
+
+=bri
+
+bri t + 0.1 1 hsv bri 2 pow *
+
+draw

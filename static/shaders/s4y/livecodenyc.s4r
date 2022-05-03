@@ -1,0 +1,64 @@
+load'images/livecode.svg'1024x1024 =logo
+
+:def slogo
+ {
+ # p 0 -0.5 0 vec3 + =p
+ # p 3 * =p
+ # p 1 + 2 mod 1 - =p
+ # p 1.1 * =p
+ p 0 0.2 t 1 * sin unbal * 0 vec3 - =p
+ logo uv tex
+ p abs dup .x swap .y max 1 step *
+ .r }
+
+{
+fitp
+p 2 * =p
+0 p .y 50 * t 20 * + sin t 10 / sin 0 1 clamp 500 pow * 0 vec3 p + =p
+slogo
+}
+=bri
+fb'last uv tex dup
+inv bri * 0.5 1 1 1 vec4 *
+# swap bri inv * 0.8 * +
+draw
+bail
+
+:def sd { =p
+ p .y p .x atan PI / 2 / 0.5 + p .z 0 vec3
+ p .xy 0 0 vec2 distance 0.5 -
+ # p 0 0 4 vec3 + =p
+ # p t rotX t 1.1 * rotY * transform =p
+ # p
+ # p 0.2 vec3.1 sdBox
+ }
+
+PI 3 / aspect 0.1 10 perspectiveProj inverse =invProj
+p invProj transform =dir
+
+:def path {
+ 0 0 t vec3 +
+ }
+
+:def project dir * p path +
+
+0 0 0 0 vec4
+:loop 80
+ { .w dup project sd vec4.2 =r r .w 0 max + r .xyz swap vec4.2 }
+dup
+.w =dist
+.xyz =boxP
+
+dist project =hitP
+hitP sd vec4.2 .w =surfDist
+
+{
+boxP =p
+p 10 * 1 + 2 mod 1 - =p
+slogo
+vec4.1
+}
+# surfDist 1 512 / step *
+# dist 1 2 ss *
+
+draw

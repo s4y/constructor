@@ -1,0 +1,13 @@
+param'amt =amt
+
+{
+fitp
+p 3.3 amt abs bal amt sign * * 0 0 vec3 + =p
+p 0.5 0.4 1 vec3 * =p
+cdist }
+0.5 0.1 ss
+=dis
+
+fb'filt uv tex dup inv 0.5 + dis mix
+# amt abs 8 invpow abs *
+draw

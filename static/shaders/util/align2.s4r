@@ -1,0 +1,53 @@
+
+{
+
+p .x abs p .y abs max 1 step =clip
+
+# p 2 * =p
+# p 1 + =p
+# p .x 0.5 + 1 mod 0.5 - p .y p .z vec3 =p
+
+{ fitp p } =fp
+
+0
+
+8 dims / =thick
+fp .xy 0 0 vec2 distance 1 - thick .x + abs thick .x step max
+{ p 1 1 0 vec3 + =p fitp cdist } 0.5 - abs thick .x step max
+{ p 1 -1 0 vec3 + =p fitp cdist } 0.5 - abs thick .x step max
+{ p -1 1 0 vec3 + =p fitp cdist } 0.5 - abs thick .x step max
+{ p -1 -1 0 vec3 + =p fitp cdist } 0.5 - abs thick .x step max
+p .xy abs thick 2 / step dup .x swap .y max max
+p .xy abs inv thick 2 / - thick step dup .x swap .y max max
+
+
+{
+50 dims / =interval
+2 dims / =line
+p .xy line 1 / + 100 dims / mod line step dup .x swap .y max
+} max
+
+vec4.1
+
+clip *
+
+draw
+
+}
+
+
+# c PI * 2 * cos c PI * 2 * sin 0.4 0 0 vec5 lase
+
+# bail
+
+# c 0.8 pow =c
+# c PI * 10 * t 1 10 * t sin * + + sin c PI * 10 * t + cos vec2 0.7 *
+# =p
+# c 0.1 step =on
+# p c * =p
+# p .x
+# p .y
+# 0.4 on * # #c PI * 2 * t 0.1 * - sin *
+# 0.0 on * # #c 2 * t 0.2 * - PI * sin *
+# 0.0 on * #  c 2 * t 0.5 * + 1 mod *
+# vec5 lase

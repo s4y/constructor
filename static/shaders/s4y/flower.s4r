@@ -1,0 +1,48 @@
+:fn smoothstep 3
+:def ss { =b =a =x a b x smoothstep }
+
+t 0.1 * param'sndGo 0.1 * + =t
+
+fitp
+
+0
+:loop 10 angle t 0.1 * cdist t 0.2 * + sin 0.2 ssf 0.5 * * + -
+ + 5 * sin dup 6 swap ssf 4 pow 1 * - /
+ cdist 1.5 * inv + t 0.1 * + PI * sin unbal
+ PI 2 * * sin unbal
+=bri
+
+bri 0.1 * bri 5 pow cdist 2 0 ss 1 hsv 0 1 clamp bri 10 pow * 0.1 ssf *
+
+bri *
+
+cdist 0 0.3 ss *
+
+draw
+bail
+
+
+:def tweak
+:def flower
+ angle cdist t 0.01 * + sin 1 * +
+ + 5 * sin 3 / tweak
+ cdist inv + sin unbal
+ t 0.01 * +
+ PI 3 * * sin unbal
+
+{
+fitp
+
+{
+# :def tweak dup ssf inv 0.8 * 0.2 + *
+0
+:loop 10 flower dup sin unbal ssf 1 pow +
+}
+=bri
+
+
+t 0.01 * 1.0 bri 1 / ssf 0.9 + 4 pow hsv
+bri 0 1 clamp *
+1.8 1.5 cdist smoothstep *
+draw
+

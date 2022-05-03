@@ -1,0 +1,28 @@
+{
+fitp
+-0.1 3 / p .x ssf 0.1 * + 1 1 hsv
+p .x ssf *
+p .y 0.3 + abs inv 0 1 clamp =bri
+0.9 1 bri smoothstep *
+}
+
+
+{
+p 0 1 dims .y / 0 vec3 - =p
+#p 0.996 1 1 vec3 * =p
+fb'f uv tex 0 255 / - max
+}
+drawto'f
+
+
+fb'f uv tex
+
+{
+fitp
+1.3 0.2 cdist smoothstep
+0.8 0.5 0.9 hsv *
+}
+
+
+0 0 0 1 vec4 max
+draw

@@ -1,0 +1,36 @@
+t 0.1 * =t
+
+:def f { dup .x =bri .y =rot
+ rot =rot
+ p rot 0.1 * - =p
+ p rot 0.35 + dup =rot rotZ transform =p
+ p t 0.8 * rotZ transform =p
+ p 0.2 + =p
+ p .y
+ p .x 10 * t + sin unbal 1 / ssf 0.1 * dup =bb +
+ abs
+ 1 dims / .y step 0.1 0.5 bb * + * bri + rot vec2
+ }
+
+{
+fitp
+p .x abs p .y p .z vec3 =p
+
+0 0 vec2
+:loop 100
+ f
+}
+
+.x =bri
+
+bri t 0.07 * + 1 mod 0.2 * bri ssf 2 pow 1 hsv bri 20 * 0 1 clamp 4 pow *
+
+draw
+bail
+
+{
+p 1 0.1 ssf 10 pow 0.03 * - * =p
+fb'f uv tex 1 255 / - blend
+}
+drawto'f
+fb'f uv texdraw

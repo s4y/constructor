@@ -1,0 +1,6 @@
+
+fitp
+cdist 0.6 - abs 0.11 0.1 ss
+angle PI / 2 / 0.5 + param'beat 4 / 1 mod + 1 mod 0.5 - abs 0.01 dup 0.001 + ss *
+vec4.1
+draw

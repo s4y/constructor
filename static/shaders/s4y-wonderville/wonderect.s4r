@@ -1,0 +1,23 @@
+fitp
+p 3 * =p
+
+0 =yeet
+:def sqr {
+ p yeet 0.1 * t 0.1 * + rotZ transform =p
+ p .x abs p .y abs max =d
+ d
+ sf
+ d 1 step min
+ }
+ yeet 2 + =yeet
+
+sqr
+sqr +
+sqr +
+sqr +
+sqr +
+sqr +
+sqr +
+2 / =yyyy
+yyyy 0.2 * 0.5 * 1 1 hsv yyyy *
+draw

@@ -1,0 +1,18 @@
+{
+# p 0 3 param'phase1 inv * 0 vec3 - =p
+# p .x p .y abs inv p .z vec3 =p
+# p 0 0 3 vec3 + PI 2.2 / param'phase1 * rotX camera_mat * transform =p
+{
+fitp
+# p 0 t -3 * 0 vec3 + =p
+# p 0 p .x t + 1 * sin 3 * p .z 2 * sin 0.1 * + 0 vec3 param'beat 1 mod PI * sin inv 4 pow 0.1 *  * + =p
+{ p 0.5 + 5 param'phase1 inv 2 * + * 1 mod bal abs =p p .x p .y min }
+0.03 p .z 1 - 10 dims .y / * 0 max + 0. ss
+# p .z 9 0 ss *
+
+{ p .x abs 0.001 - dup 0.2 mod - 1.8 step } 1 param'phase1 mix *
+}
+
+
+vec4.1
+draw

@@ -1,0 +1,11 @@
+0.02 0.0 p .y abs smoothstep
+# 0.3 0.2 cdist smoothstep *
+0.1 fsf 1 0.4 fsf 2 pow hsv *
+
+{
+p 0.01 cdist inv * rotZ transform =p
+fb'f uv tex 1 512 / - blend
+}
+drawto'f
+
+fb'f uv tex draw

@@ -1,0 +1,6 @@
+p t 0.05 * rotZ transform =p
+# p .x 0 step
+
+p .x p .y 5 * t 1 *  + sin unbal
+{ p 2 + =p cdist 5 * t 2 * - sin unbal } *
+vec4.1 inv draw

@@ -1,0 +1,47 @@
+0.1 sf 0.1 + 0 1 clamp 2 pow =thump
+
+
+fb'webcam uv tex =color
+
+# color 1 1 1 color .r vec4 * =color
+
+color # .brga
+
+color .r 1 pow inv 1 pow *
+
+thump *
+
+{
+p 0 0.005 0 vec3 - =p
+fb'f uv tex 1 255 / -
+# thump inv 2 pow * # 0.1 sf 7 pow *
+# p .x abs sf 0.1 * 2 0 vec3 addHsv
+max
+}
+
+drawto'f
+
+fb'f
+{
+uv }
+tex
+# dup .b *
+
+# 0 =thump
+
+=c
+
+{ cdist -0.1 * thump * 1 + p * =p fb'f uv tex .r } 
+{ cdist -0.2 * thump * 1 + p * =p fb'f uv tex .g } 
+{ cdist -0.3 * thump * 1 + p * =p fb'f uv tex .b } 
+c .a thump *
+vec4
+
+# p .x 0 step *
+
+# {
+# fitp
+# cdist thump * *
+# # color .r 0.5 step inv *
+# }
+draw

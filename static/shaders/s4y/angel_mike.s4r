@@ -1,0 +1,14 @@
+load'images/angel_mike_nohalo.svg'4096x4096 =logo
+
+{
+fitp
+logo uv tex .r
+0 0.01 ss
+} =l
+
+fb'filt uv tex =t
+
+t inv l *
+t l inv * +
+
+vec4.1 draw

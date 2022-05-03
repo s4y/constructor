@@ -1,0 +1,42 @@
+
+# 0.9 fsf 1 pow
+# vec4.1
+# draw
+# bail
+
+{
+fitp
+
+# p cdist t 0.1 * sin + rotZ transform =p
+
+:def f { =twist
+ p 0.0 - twist rotZ transform .x xx .y 1 * sin unbal ssf 1.0 * 1 swap - * abs t 1.2 * +
+ }
+
+:def step { =xx
+ xx .x f xx .x 0.2 * + sin
+ xx .y 0.1 + vec2
+ }
+
+# p p .x p .y * sf 0.0 * 1 +  1 1 vec3 * =p
+
+p 4 * =p
+# p t 10 / * =p
+# p cdist angle PI / 2 / ssf 0.1 * 0.5 + * 3 - / =p
+
+0 0 vec2
+:loop 20 {
+ p 1 p .x 10 / sf 1 * 0 vec3 - =p
+ step # =r r .x dup ssf vec2
+ }
+=ret
+
+ret .x sin unbal 0.1 * ret .x inv 0.5 * + 0.5 + cdist 1 hsv ret .x sin unbal cdist * 5 / *
+
+draw
+bail
+
+drawto'f
+
+}
+

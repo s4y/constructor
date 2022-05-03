@@ -1,0 +1,25 @@
+fb'last uv tex
+=l
+
+{
+# p cdist inv 4 pow param'beat 1 / 1 mod PI * 2 * sin 20 spow 0.5 * * rotZ transform =p
+fitp
+p t sin cdist inv 1.1 * + rotZ transform =p
+p .x aspect / abs p .y abs max 0 2 clamp =dis
+dis 1 *
+param'beat 0.1 + dup PI * 2 * sin 0.3 * + - 
+1 mod 1.1 *
+# dis 0 0.5 ss *
+1 step
+}
+=which
+
+
+l which *
+l inv which inv *
+# 0.0 *
+cdist 0 1.0 ss *
++
+
+
+draw

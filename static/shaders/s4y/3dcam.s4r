@@ -1,0 +1,59 @@
+:def sampleDepth { =p
+  p 0 aspect'webcam 5 / vec2 + =p
+  p 0.5 2 vec2 / 0 0 vec2 + =camp
+  fb'webcam camp tex .r
+  camp 0 0.5 vec2 + =camp
+  fb'webcam camp tex .r 256 / +
+  =x x
+  16 *
+  inv
+  camp .x abs 1 step min
+  p .y 1 step *
+  p bal .y 0.1 - abs 0.5 * p 0.018 + 1.8 * bal .x abs 0.03 + + 1 step *
+  x 1 256 / step inv *
+  }
+
+
+# p .xy unbal sampleDepth
+# 1 *
+# vec4.1 draw
+# bail
+
+
+:def sd { =p
+  p 0 0 3 vec3 + =p
+  p 0.4 t sin * rotY 0.0 rotX * transform =p
+  p .xy unbal sampleDepth
+  p .z 4 + * -1 * 100 /
+  }
+
+# :def sd
+#  0 0 1 vec3 +
+#  0.1 vec3.1 sdBox
+
+fitp
+
+0 0 -1 vec3 =direction
+:def marchOnce direction * p + sd
+
+0
+:loop 60
+ dup marchOnce 0 max +
+=dist
+
+dist direction * p +
+=hitP
+
+hitP estimateNormal
+=norm
+
+dist marchOnce
+=surfDist
+
+:def bg { =p
+ 0.6 p .y 0.5 * 0.5 + 1 hsv
+ }
+
+dist 0 1 ss vec4.1 # fb'webcam norm 1 * .xy unbal tex
+# surfDist 1 64 / step *
+draw

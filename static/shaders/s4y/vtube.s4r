@@ -1,0 +1,61 @@
+:def sd {
+  0 0 3 vec3 +
+  t 0.2 * rotY t 0.6 * rotX * transform
+  dup =op
+  =p
+  p .y 5 / sf 4 pow 0.4 * 1 swap - =snd
+  snd 1 snd vec3 p * =p
+  p 0.3 0.1 fsf 2 pow 0.2 * + vec3.1 sdBox
+  }
+
+p =op
+
+fitp
+# p 1.3 0.6 0 vec3 + =p
+
+0 0 -1 vec3 =direction
+:def marchOnce direction * p + sd
+
+0
+:loop 60
+ dup marchOnce 0 max +
+=dist
+
+dist direction * p +
+=hitP
+
+hitP estimateNormal
+=norm
+
+dist marchOnce
+=surfDist
+
+:def bg { =p
+ 0.6 p .y 0.5 * 0.5 + 1 hsv
+ }
+
+{
+0 0 0 hsv
+cdist 1 0.5 ss *
+# draw
+}
+
+fb'webcam norm 1 * op 0.0 + -0.3 * + .xy unbal tex
+0.5 +
+4 vec4.1 pow
+
+norm 1 vec4.2 + PI * 2 * sin unbal
+
+# norm
+# -1 1 0 vec3 dot
+# 0 1 1 hsv *
+# +
+# 
+# norm
+# 1 1 0 vec3 dot
+# 0 1 1 hsv *
+# +
+
+surfDist 1 64 / step *
+draw
+

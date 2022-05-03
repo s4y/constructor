@@ -1,0 +1,44 @@
+param'chaos =chaos
+
+:def sceneDistance { =p p
+  0 0 2 vec3 +
+  param'gRotX rotX
+  param'gRotY rotY *
+  param'gRotZ rotZ *
+  transform =p p
+  1 + 2 mod 1 - p chaos inv mix
+  =p p
+  0.4 vec3.1
+  sdBox
+  p 0.7 p .z 1 mod ssf * sdSphere 0.1 ssf chaos * mix
+  p .x fsf 4 pow 0.8 * 2 pow chaos * -
+  }
+
+{
+p =op
+fitp
+
+0 0 -1 vec3 =direction
+
+:def marchOnce 0 0 -1 vec3 * p + sceneDistance
+
+0
+:loop 40
+ dup marchOnce 0 max +
+=dist
+
+dist direction * p + marchOnce
+=surfDist
+
+{ op dist 0.1 * - =p fb'last uv tex }
+# dist 1 mod surfDist sf 1 pow + 0.0 dist 10 / inv hsv
+dist 10 9 ss *
+# surfDist -1 1 step *
+vec4.1
+}
+
+# fb'remoteCam uv tex .r 0 1 1 hsv * 100 256 / - blend
+
+drawto'f
+
+fb'f uv tex draw

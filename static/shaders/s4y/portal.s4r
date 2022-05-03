@@ -1,0 +1,22 @@
+fb'last uv tex
+
+{
+fitp
+p 2 * =p
+p .y sf 1 + 1 1 vec3 p * =p
+cdist 1 step *
+}
+
+{
+p 0.05 sf 0.01 * rotZ transform =p
+# p .y sf 1 + 1 1 vec3 p * =p
+p 0.91 * =p
+fb'f uv tex blend
+}
+drawto'f
+
+
+fb'f uv tex
+0 0 0 1 vec4 blend
+draw
+

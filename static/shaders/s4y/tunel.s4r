@@ -1,0 +1,70 @@
+:def sdCube {
+ 0 0 t vec3 -
+ =p p
+ 2 2 0 vec3 +
+ 2 + 4 mod 2 -
+ # 0 0 t vec3 +
+ =p p
+ p .y 1 / sf 0.0 * 0 0 vec3 +
+ # p .z 2 * sin 0 0 vec3 +
+ =p p
+ # p .y sf 0.1 * 1 + 1 1 vec3 *
+ t 0.11 * rotY transform
+ =p p
+ 1.0 vec3.1 sdBox
+ p swap vec4.2
+ # .xy 0 0 vec2 distance p .z sin unbal sf 0.01 * + 0.1 +
+ }
+
+fitp
+
+PI 1.5 / 1 0.1 10 perspectiveProj inverse =invProj
+p invProj transform =dir
+
+:def project dir * p +
+
+0 vec4.1
+:loop 40 {
+ =l
+ l .w project sdCube =n
+ n .xyz n .w 0 max l .w + vec4.2
+ }
+=hit
+hit .w =dist
+
+dist project =hitP
+
+hitP sdCube .w =surfDist
+
+{
+:def sd sdCube .w
+hitP estimateNormal
+}
+=norm
+
+:def bg { =p
+ p unbal =p
+ p .x p .z +
+ p .y
+ p .z
+ vec3 =p
+ p 40 * 0.5 + =pp pp 1 mod 0.5 - =p
+ pp p - =w
+ 0.3 0.2 p .x abs p .y abs max smoothstep =l
+ w .x 3 / t 0.01 * + 1 l w .y 10 / 1 mod sf 2 pow * hsv
+ }
+
+hit .xyz 2 / 3 +
+bg
+
+# 0 vec4.1
+# 0 0.5 0.3 hsv norm 0 1 -0.5 vec3 normalize dot 0 max * +
+# 0.7 0.5 0.3 hsv norm 0.5 -0.7 0.5 vec3 normalize dot 0 max * +
+
+#0 0 l hsv
+
+20 10 dist smoothstep *
+1 1 1024 / surfDist smoothstep *
+
+draw
+

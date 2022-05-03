@@ -1,0 +1,16 @@
+{
+p 4 / = p
+p cdist inv param'beat 1 +  4 / 3 mod PI * 2 * sin 20 spow * rotZ transform =p
+fitp
+p t sin rotZ transform =p
+p .x abs p .y abs max 0 1 clamp =dis
+dis 2 *
+0.0 - param'beat abs 1 mod 1 spow -
+8 * 4 mod 1 *
+dis 0 0.5 ss *
+}
+=which
+
+1 vec4.1
+which *
+draw

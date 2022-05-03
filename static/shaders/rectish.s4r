@@ -1,0 +1,28 @@
+1 0 0 1 vec4 
+draw
+bail
+
+fb'filt uv tex
+=l
+
+{
+p cdist inv 4 pow param'beat 4 / 1 mod PI * 2 * sin 20 spow * rotZ transform =p
+fitp
+p t sin rotZ transform =p
+p .x aspect / abs p .y abs max 0 1 clamp =dis
+dis 2 *
+0.0 - param'beat abs 1 mod 8 spow -
+1 mod 1.1 *
+# dis 0 0.5 ss *
+1 step
+}
+=which
+
+
+l which *
+l inv which inv *
+0.6 *
++
+
+
+d

@@ -1,0 +1,18 @@
+:def sd
+  0 0 2 vec3 +
+  t rotX
+  t rotZ * transform
+  0.4 vec3.1
+  sdBox
+
+fitp
+
+0 0 -1 vec3 =dir
+:def marchOnce dir * p + sd
+
+0
+:loop 40
+ dup marchOnce 0 max +
+
+3 / 2 pow inv
+vec4.1 draw

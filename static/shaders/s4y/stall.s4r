@@ -1,0 +1,8 @@
+{
+p 0 p .x unbal p .y unbal inv 2 pow * 0.01 * 0 vec3 + =p
+fb'f uv tex 0.98 *
+}
+fb'filt uv tex
+param'prg inv mix
+drawto'f
+fb'f uv tex draw

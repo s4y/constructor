@@ -1,0 +1,5 @@
+c PI * 2 * t + sin =x
+c PI * 10 * cos =y
+c PI * 10 * 0.31 - cos =yy
+x y
+0 0 1 yy 0 step * x abs t 1 * + 1 mod 10 / fsf 1000 pow * vec5 lase
