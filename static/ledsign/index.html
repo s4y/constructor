@@ -3,18 +3,28 @@
 
 body {
   background: black;
+  margin: 0;
 }
 
 #preview {
   width: 100%;
   image-rendering: pixelated;
-  border: 10px solid #888;
-  border-radius: 10px;
+  border: 2px solid #888;
   box-sizing: border-box;
+  display: block;
 }
 </style>
 <canvas width=120 height=7 id=preview></canvas>
 <script type=module>
+
+import Knobs from '/lib/Knobs.js'
+
+const qs = location.search
+  .substr(1)
+  .split('&')
+  .filter(v => v)
+  .map(c => c.split('=').map(decodeURIComponent))
+  .reduce((params, [k, v]) => (params[k] = v, params), {});
 
 class WSConnection {
   constructor(url) {
@@ -25,6 +35,7 @@ class WSConnection {
     if (this.ws)
       this.ws.close();
     this.ws = new WebSocket(this.url);
+    this.ws.binaryType = "arraybuffer";
     this.ws.onclose = e => {
       this.open = false;
       setTimeout(() => this.connect(), 1000);
@@ -32,8 +43,8 @@ class WSConnection {
     this.ws.onopen = e => {
       this.open = true;
     };
-    this.onmessage && (this.ws.onmessage = e => {
-      this.onmessage(JSON.parse(e.data));
+    this.onmessage && (this.ws.onmessage = async e => {
+      this.onmessage(typeof e.data == 'string' ? JSON.parse(e.data) : await e.data);
     });
   }
   send(...args) {
@@ -42,8 +53,11 @@ class WSConnection {
 }
 
 class Art {
-  constructor(path, args) {
+  constructor(path, args, autoTake) {
     this.url = new URL(path, location);
+    this.autoTake = autoTake || false;
+    this.pendingFn = null;
+    this.takeSpeed = 1;
     this.args = args;
     this.fn = () => {};
     this.load();
@@ -52,16 +66,75 @@ class Art {
       if (e.detail != this.url.href)
         return;
       e.preventDefault();
-      this.load();
+      if (e.detail.indexOf('art.js') != -1)
+        this.load();
     });
+  }
+  take() {
+    const fn = this.pendingFn;
+    if (!fn)
+      return;
+    this.pendingFn = null;
+    if (this.fn) {
+      const oldFn = this.fn;
+      const startTime = reserve.now();
+      this.fn = (...args) => {
+        const p = (reserve.now() - startTime) / (this.takeSpeed * 1000);
+        if (p > 1) {
+          if (this.fn == oldFn)
+            this.fn = fn;
+          return fn(...args);
+        }
+        if (Math.random() > p)
+          return oldFn(...args);
+        else
+          return fn(...args);
+      };
+    } else {
+      this.fn = fn;
+    }
   }
   async load() {
     const text = await (await fetch(this.url)).text();
-    this.fn = new Function(...this.args, text);
+    this.pendingFn = new Function(...this.args, text);
+    if (this.autoTake)
+      this.take();
   }
 }
 
+const ctx = {
+  knobs: new Knobs(),
+  get downbeat() {
+    const officialDownbeat = this.knobs.knobs.downbeat;
+    return officialDownbeat;
+    if (!this._currentDownbeat)
+       this._currentDownbeat = officialDownbeat;
+    const diff = officialDownbeat - this._currentDownbeat;
+    if (Math.abs(diff) > 1000)
+      this._currentDownbeat = officialDownbeat;
+    else
+      this._currentDownbeat += diff * 0.1;
+    this._currentDownbeat = officialDownbeat;
+    return this._currentDownbeat;
+  },
+  get bpm() { return this.knobs.knobs.bpm; },
+  get beat() {
+    const { bpm, downbeat } = this;
+    return (bpm && downbeat) ? (((this.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
+  },
+  // get beatAmt() { return Math.pow(1-(this.beat%1), 2); },
+  get beatAmt() { return this.beat%1; },
+  clock: {
+    now() {
+      return reserve.now() + this.fixedOffset;
+    },
+    fixedOffset: 0,
+  },
+};
+
+
 const params = {
+  id: null,
   first: false,
   state: {},
   t: 0,
@@ -71,48 +144,39 @@ const params = {
   h: 7,
   get xx() { return (this.x / this.w) * 2 - 1; },
   get yy() { return (this.y / this.h) * 2 - 1; },
-  get ctx() { return window.top.ctx; },
+  get ctx() { return ctx; },
   get beat() { return this.ctx.beat; },
   get beatAmt() { return this.ctx.beatAmt; },
   ssf(x) { 
-    const buf = this.ctx.slowFFT.buf;
+    const buf = slowByteFreqData;
     return buf[Math.floor(x*buf.length)]/255;
   },
   fsf(x) { 
-    const buf = this.ctx.fastFFT.buf;
+    const buf = byteFreqData;
     return buf[Math.floor(x*buf.length)]/255;
   },
   sf(x) { 
-    const buf = this.ctx.medFFT.buf;
+    const buf = byteFreqData;
     return buf[Math.floor(x*buf.length)]/255;
   },
   st() { 
   },
 };
 
-const art = new Art('art.js', Object.keys(params));
+const art = new Art('art.js', Object.keys(params), 'preview' in qs);
 
-const ac = new AudioContext();
-const gain = ac.createGain();
-const analyser = ac.createAnalyser();
-analyser.fftSize = 4096;
-
-window.gain = gain;
-gain.gain.value = 1;
-gain.connect(analyser);
-
-const byteFreqData = new Uint8Array(61);
-const byteTimeData = new Uint8Array(analyser.fftSize);
+const byteFreqData = new Uint8Array(128);
+const slowByteFreqData = new Uint8Array(128);
+const byteTimeData = new Uint8Array(1024);
 window.byteTimeData = byteTimeData;
 const mul = 8;
 const maxPos = byteTimeData.length - (120*mul);
 
-analyser.smoothingTimeConstant = 0.1;
-
 const ws = new WSConnection('ws://127.0.0.1:10605');
-ws.connect();
+if (!('preview' in qs))
+  ws.connect();
 
-const ctx = preview.getContext('2d');
+const previewCtx = preview.getContext('2d');
 const id = new ImageData(120, 7);
 
 for (let i = 0; i < id.data.length; i += 4)
@@ -123,17 +187,10 @@ const drawPreview = buf => {
     const val = (buf[Math.floor(i/4/8)] >> (i/4%8)) & 1;
     id.data[i+0] = val ? 255 : 0;
   }
-  ctx.putImageData(id, 0, 0);
+  previewCtx.putImageData(id, 0, 0);
 };
 
-setInterval(() => {
-  const buf = new Uint8Array(7 * 15);
-
-  analyser.getByteFrequencyData(byteFreqData);
-  analyser.getByteTimeDomainData(byteTimeData);
-
-  const glitch = 0;//Math.pow((byteFreqData.slice(0, 20).reduce((a, b) => Math.max(a, b))) / 255, 4);
-
+const drawSign = (buf, id) => {
   let ofs = maxPos;
   let above = byteTimeData[0] >= 127;
   while (ofs && byteTimeData[ofs] >= 127)
@@ -141,33 +198,87 @@ setInterval(() => {
   while (ofs && byteTimeData[ofs] < 127)
     ofs--;
 
-  params.t = Date.now() / 1000;
-  for (let i = 0; i < 120; i++) {
-    const val = Math.max(0, byteTimeData[ofs + i * 8]-127)*2;
-    params.x = i;
-    for (let j = 0; j < 7; j++) {
-      params.first = i == 0 && j == 0;
-      params.y = j;
-      if (art.fn(...Object.values(params).map(x => typeof x == 'function' ? x.bind(params) : x)))
-        buf[Math.floor(i/8) + j * Math.floor(((120/8+glitch*41/7)%120))] |= 1 << (i % 8);
-      // if ((1-Math.pow(val/255, 1))*7 <= j)
-      //   buf[Math.floor(i/8) + j * Math.floor(((120/8+glitch*41/7)%120))] |= 1 << (i % 8);
+  const lparams = Object.create(params);
+  for (const k in lparams) {
+    if (typeof lparams[k] == 'function')
+      lparams[k] = lparams[k].bind(lparams);
+  }
+  lparams.t = reserve.now() / 1000;
+  lparams.id = id;
+  const { w, h } = params;
+  Object.defineProperty(lparams, 'beat', { value: lparams.beat });
+  Object.defineProperty(lparams, 'beatAmt', { value: lparams.beatAmt });
+  Object.defineProperty(lparams, 'xx', { writable: true, value: 0 });
+  Object.defineProperty(lparams, 'yy', { writable: true, value: 0 });
+  const keys = Object.keys(params);
+  const args = keys.map(k => lparams[k]);
+  const xIdx = keys.indexOf('x');
+  const xxIdx = keys.indexOf('xx');
+  const yIdx = keys.indexOf('y');
+  const yyIdx = keys.indexOf('yy');
+  for (let j = 0; j < 7; j++) {
+    params.y = j;
+    args[yIdx] = params.y;
+    args[yyIdx] = params.yy;
+    for (let i = 0; i < 120; i++) {
+      params.x = i;
+      args[xIdx] = params.x;
+      args[xxIdx] = params.xx;
+      // params.first = i == 0 && j == 0;
+      // for (let i = 0; i < keys.length; i++)
+      //   args[i] = lparams[keys[i]];
+      if (art.fn(...args))
+        buf[Math.floor(i/8) + j * Math.floor((120/8)%120)] |= 1 << (i % 8);
     }
   }
+  if ('preview' in qs)
+    drawPreview(buf);
+  return buf;
+  // if (ws.open)
+  //   ws.send(buf);
+};
 
-  drawPreview(buf);
+const buf = new Uint8Array(7 * 15);
+const signId = +qs.id || 0;
+
+setInterval(() => {
+  buf.fill(0);
+  // return drawSign(buf, signId);
+  drawSign(buf, signId);
   if (ws.open)
     ws.send(buf);
-}, 10);
+  // if (ws1.open)
+  //   ws1.send(drawSign(1));
+  for (let i = 0; i < byteFreqData.length; i++)
+    byteFreqData[i] *= 0.99;
+  for (let i = 0; i < slowByteFreqData.length; i++)
+    slowByteFreqData[i] *= 254/255;
+}, 1000 / 100);
 
-(async () => {
-  const stream = await navigator.mediaDevices.getUserMedia({
-    audio: {
-      noiseSuppression: false,
-      echoCancellation: false,
-    }
-  });
-  ac.createMediaStreamSource(stream).connect(gain);
-})();
+const sndConn = new WSConnection('ws://127.0.0.1:10607');
+sndConn.onmessage = msg => {
+  byteFreqData.set(new Uint8Array(msg));
+  for (let i = 0; i < byteFreqData.length; i++)
+    slowByteFreqData[i] = Math.max(slowByteFreqData[i], byteFreqData[i]);
+};
+sndConn.connect();
+
+
+window.addEventListener('sourcechange', e => {
+  if (e.detail.indexOf('/ledsign/') == -1)
+    e.preventDefault();
+});
+
+window.addEventListener('broadcast', e => {
+  if (e.detail.type != 'event')
+    return;
+  const { name, args } = e.detail.value;
+  if (name != 'take')
+    return;
+  if (args[0] != null)
+    art.takeSpeed = args[0];
+  art.take();
+  console.log(art.takeSpeed);
+});
 
 </script>

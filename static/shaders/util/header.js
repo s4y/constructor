@@ -81,9 +81,9 @@ ctx.params.vel ||= new ctx.Gradual(1, 0.99);
 ctx.params.gTimeOfDay ||= new ctx.Gradual(1, 0.97);
 ctx.params.beat = 0;
 ctx.params.beatAmt = new ctx.Gradual(0);
-ctx.params.beatVol = new ctx.Gradual(1, 0.9);
+ctx.params.beatVol = new ctx.Gradual(1, 0.5);
 
-ctx.params.intensity = new ctx.Gradual(0, 0.99);
+ctx.params.intensity = new ctx.Gradual(0, 0.97);
 ctx.params.goVel = new ctx.Gradual(0);
 ctx.params.go = 0;
 
@@ -144,6 +144,10 @@ let lastClock = 0;
 
 ctx.params.midiBeat = { valueOf() { return midiBeat } };
 
+ctx.params.beatPhase = 0;
+ctx.params.beatUpLatch = new Latch(() => ctx.midi.button3);
+ctx.params.beatDownLatch = new Latch(() => ctx.midi.button4);
+
 ctx.params.phaseUpLatch = new Latch(() => ctx.midi.button1);
 ctx.params.phaseDownLatch = new Latch(() => ctx.midi.button2);
 
@@ -159,13 +163,21 @@ return () => {
   then = now;
 
   ctx.params.intensity.value = ctx.midi.knob7;
-  ctx.params.goVel.value = ctx.midi.knob3;
-  ctx.params.go += ctx.params.goVel * 1;
+  ctx.params.goVel.value = ctx.midi.knob3 * 0.99 + 0.01;
+  ctx.params.go += ctx.params.goVel * 0.1;
 
   if (ctx.params.phaseUpLatch.check())
     ctx.params.angelPhase.value = ctx.params.angelPhase.targetValue + 1;
   if (ctx.params.phaseDownLatch.check())
     ctx.params.angelPhase.value = ctx.params.angelPhase.targetValue - 1;
+  if (ctx.params.beatUpLatch.check()) {
+    if (ctx.params.beatPhase)
+      ctx.params.beatPhase *= 2;
+    else
+      ctx.params.beatPhase = 1;
+  }
+  if (ctx.params.beatDownLatch.check())
+    ctx.params.beatPhase = 0;
   ctx.params.angelPhase.step();
 
   ctx.params.phase1 = Math.max(0, Math.min(1, ctx.params.angelPhase.value));
@@ -198,13 +210,13 @@ return () => {
     lastClock = midiClock;
   }
 
-  const newLo = Math.pow(ctx.medFFT.buf.slice(0, 10).reduce((a, b) => Math.max(a, b)) / 255, 2);
+  const newLo = Math.pow(ctx.medFFT.buf.slice(0, 30).reduce((a, b) => Math.max(a, b)) / 255, 2);
   ctx.params.thump *= 0.98;
   if (newLo - ctx.params.lo > 0.05)
     ctx.params.thump = 1;
   ctx.params.lo = newLo;
 
-  ctx.params.sndVel.value = ctx.params.sndVel * 0.9 + 0.02 * Math.pow(ctx.fastFFT.buf[2] / 255, 5);
+  ctx.params.sndVel.value = ctx.params.sndVel * 0.98 + 0.05 * Math.pow(ctx.params.lo, 10);
   ctx.params.sndGo += ctx.params.sndVel * 0.01;
 
   ctx.params.gRotX += velX.value * 0.05;
@@ -215,10 +227,22 @@ return () => {
 
   const camera_mat = math.multiply(...[
     translate(0, 0, 0),
-    rotY(Math.sin(ctx.params.go / 100 * Math.PI * 2) * (1.5 * ctx.params.intensity)),
-    rotX(Math.sin(ctx.params.go / 120 * Math.PI * 2) * (1.3 * ctx.params.intensity)),
+    rotY(Math.sin(ctx.params.go / 100 * Math.PI * 2) * (2.5 * ctx.params.intensity)),
+    rotX(Math.sin(ctx.params.go / 120 * Math.PI * 2) * (0.3 * ctx.params.intensity)),
     // rotZ(Math.sin(ctx.now()) * 0.5),
   ]);
+
+  if (ctx.tracking) {
+    if (ctx.tracking.state.camera) {
+      const pose = ctx.tracking.state.camera.pose;
+      camera_mat[0] = pose.slice(0, 4);
+      camera_mat[1] = pose.slice(4, 8);
+      camera_mat[2] = pose.slice(8, 12);
+      camera_mat[3] = pose.slice(12, 16);
+    }
+  }
+
+
   const proj_mat = math.multiply(
     perspectiveProj(Math.PI/5, ctx.viewport[2]/ctx.viewport[3], -0.0, 1),
     translate(0, 0, 0)

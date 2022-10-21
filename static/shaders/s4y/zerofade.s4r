@@ -1,0 +1,9 @@
+p .y unbal p .x 0.07 * + abs 0.9 0.9 ss
+p .y unbal inv p .x 0.07 * + abs 0.83 0.85 ss max
+
+p .x unbal 0.1 0 ss max
+
+0 0 0 1 vec4 *
+
+
+draw

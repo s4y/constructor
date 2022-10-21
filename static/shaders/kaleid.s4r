@@ -1,1 +1,3 @@
+p .x abs p .y abs p .z vec3 =p
+
 1 0 0 1 vec4 draw

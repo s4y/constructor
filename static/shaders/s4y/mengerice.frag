@@ -6,17 +6,15 @@ uniform float webcam_aspect;
 uniform sampler2D filt;
 uniform float filt_aspect;
 
-const int kSteps = 220;
+const int kSteps = 120;
 const float kEpsilon = 1./1024.;
 
 uniform float sndGo;
+uniform float beat;
+uniform float thump;
 
 mat4 inv_proj_mat;
 float aspect;
-
-float balmod(float what, float by) {
-  return mod(what + by / 2., by) - by / 2.;
-}
 
 struct Hit {
   float dist;
@@ -24,17 +22,22 @@ struct Hit {
 };
 
 Hit sd(vec3 p) {
-  // float t = sndGo * .1;
-  vec3 op = p;
+  float t = t * 0.01 + sndGo * 1.;
   // p.x += sin(t/120.*60.*1.)*0.1;
-  p.z += 1.2;
-  // p.x += 0.35;
-  // p.xy = mod(p.xy + 0.3, .6) - 0.3;
+  // p = transform(rotY(0.0 * sin(t)), p);
+  // p.z += t * 1.0;
+  // p = transform(rotZ(p.z  * 1.), p);
+  // p = transform(rotX(p.z * 0.6), p);
+  p.z += 0.6;
+  p = transform(rotX(sin(t * 1.8 * p.y * 0.01) * 0.9) * rotY(0.9 * sin(t * 0.7 + 0. * (beat * PI * 2. / 16.))), p);
+  // p = transform(rotY(PI/2.) * rotX(t * 0.0 + p.z), p);
+  vec3 op = p;
+  p.x = mod(p.x + 1./8., 1./4.) - 1./8.;
+  // p = transform(rotX(PI/2.) * rotX(t * -0.1 * PI + p.z), p);
   // p = transform(rotZ(0. * t * PI * 2. / 2. + PI/4.) * rotY(0.0 * sin(t*PI*2. / 32.)), p);
   // p = transform(rotZ(sin(t * PI * 2. / 2.) * -0.1 - PI / 4.), p);
   // p.z -= t;
 
-  p = transform(rotY(t * 0.1) * rotX(t * 0.2), p);
 
   // p = transform(rotY(0.5) * rotX(0.5), p);
 
@@ -49,19 +52,22 @@ Hit sd(vec3 p) {
   //     (sin(p.y * 42. + 1.2) - sin(p.z * 22. + 0.5)));
 
   float whichSlice = p.z;
-  whichSlice -= balmod(whichSlice, .12 * 1.05 * 2. / 3.);
-  // p = transform(rotZ(pow(mod(t * whichSlice, 1.), 10.) * PI / 2.), p);
+  whichSlice -= mod(whichSlice, .1);
+  // whichSlice -= balmod(whichSlice, .12 * 1.05 * 2. / 2.);
+  // p.y += sin(whichSlice * 1.) * 2;
+  // p = transform(rotY(pow(mod(sin(beat * PI * 2. / 16.) * 1. * whichSlice, 1.), 2.) * PI / 2.), p);
 
   float whichSliceY = (p.y) / 1.05;
-  whichSliceY -= balmod(whichSliceY, .12 * 2. / 3.);
-  // p = transform(rotY(pow(mod(t * 0.1 * whichSliceY, 1.), 10.) * PI / 2.), p);
+  // whichSliceY -= balmod(whichSliceY, .12 * 2. / 3.);
+  // p = transform(rotY(pow(mod(sin(beat * PI * 2.) * 1. * whichSliceY, 1.), 10.) * PI / 2.), p);
 
 
 	// p.y *= 1. + sf(abs(p.x / 10.));
 
-  float dist = mix(sdMengerSponge(p, vec3(0.15)), sdSphere(p, 0.2), -.5);
-  // float dist = sdBox(p, vec3(0.12));
-  return Hit(dist/5., p);
+  // float dist = mix(sdCross(p, vec2(0.1, 0.1 * sf(sin(p.y / 5.)/2.+0.5))), sdSphere(p, 0.3), 0.1);
+  // float dist = mix(sdSphere(p, 0.25/2.), sdBox(p, vec3(0.2, 0.1, 0.1)), .1 + pow(sf(mod(abs(op.x) / 20. - t * .1, .5)), 20.) * 0.1 + 0.7 * sin(op.x * 10. + t * 0.1));
+  float dist = sdBox(p, vec3(0.1, vec2(0.1 * pow(sf(abs(p.x / 10.)), 2.))));
+  return Hit(dist/2., p);
 }
 
 // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
@@ -129,7 +135,7 @@ vec4 march(vec3 p) {
   // light = bg(transform(inverse(inv_proj_mat), hitP)) * (1.-light.a) + light;
   // light = mulHsv(bg(norm + hitP), vec3(1,0.5,0.9)) * (1.-light.a) + light;
   light += bg(texP) * (1.-light.a) + light;
-  // light *= smoothstep(7., 6., dist);
+  light *= smoothstep(7., 6., dist);
   light *= smoothstep(kEpsilon*2., kEpsilon, surfaceDist);
   light.a = 1.;
   return light;

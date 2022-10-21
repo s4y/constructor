@@ -1,0 +1,23 @@
+t 0.1 * =t
+
+{
+fitp
+p t rotZ transform =p
+# p p .y dup 1 smod - ssf 1 * 0 0 vec3 + =p
+p 1 balmod =p
+# p 5 * =p
+# p t -1 * rotZ transform =p
+p angle t 0.1 * + dup PI 2.0 param'beat 8 / sin * / mod - rotZ transform =p
+p .x dup 0.4 mod + p .y p .z vec3 =p
+fb'last uv tex
+# 0.01 0.1 0 vec3 addHsv
+
+}
+
+{
+# p 0.1 cdist sf * rotZ transform =p
+fb'f uv tex 0.5 * +
+1 mod
+}
+drawto'f
+fb'f uv tex draw

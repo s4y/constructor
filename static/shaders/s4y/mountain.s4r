@@ -1,0 +1,13 @@
+# param'sndGo 0.1 * =t
+#
+t 1 * =t
+
+fitp
+{
+# p 0 p .x 0.1 * t 0.01 *  + 20 * sin 0 vec3 + =p
+p .x t -0.1 * + 1.5 mod 0.5 - abs p .y abs + t 0.09 * - 2 * 1 mod sf =bri
+
+
+bri t 0.3 * + 1.0 1 hsv bri 2 pow *
+}
+draw

@@ -1,0 +1,10 @@
+t 0.1 * =t
+
+p .x 6 * p .y 2 * + t + sin unbal
+p .x 7 * p .y -3 * + t + sin unbal +
+{ p 4 0 0 vec3 + =p cdist 4 * sin + }
+2 /
+1 pow
+2 3 / 0.6 1 hsv *
+0.2 * 
+draw

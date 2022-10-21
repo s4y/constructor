@@ -2,7 +2,7 @@
 
 uniform sampler2D u_fb;
 uniform sampler2D webcam;
-#loadimage logo testpilot.png
+#loadimage logo no_crypto.png
 
 struct Hit {
   float dist;
@@ -24,7 +24,7 @@ Hit sdMany(vec3 p) {
   p = transform(rotY(PI/2.+t), p);
   p.y *= 1. - sf(p.x/10./2.+.5);
   Hit hit = Hit(sdBox(p, vec3(0.5,0.5,0.05)), p*2., 0.);
-  vec4 color = texture2D(logo, p.xy*2./2.+.5);
+  vec4 color = texture(logo, p.xy*2./2.+.5);
   if (color.r < .5)
     hit.dist = max(hit.dist, 0.02);
   // hit.dist/=2.;
@@ -35,9 +35,9 @@ Hit sdOne(vec3 p) {
   p.z += 2.;
   p = transform(rotX(sin(t*0.45)*0.4) * rotY(t*0.5), p);
   p.y *= 1. - sf(p.x/10./2.+.5);
-  Hit hit = Hit(sdBox(p, vec3(0.5,0.05,0.05)), p*2., 1.);
-  vec4 color = texture2D(logo, p.xy*2./2.+.5);
-  if (color.r < .5)
+  Hit hit = Hit(sdBox(p, vec3(0.5,0.1,0.05)), p*2., 1.);
+  vec4 color = texture(logo, p.xy*vec2(3.,9.)/2.+.5);
+  if (color.r > .5)
     hit.dist = max(hit.dist, 0.1);
   hit.dist/=4.;
   return hit;
@@ -61,7 +61,7 @@ void main() {
   // else
   //   p.y *= u_resolution.y/u_resolution.x;
   mat4 inv_proj_mat = inverse(perspectiveProj(
-    PI/4., aspect, 0.3, 10.0
+    PI/4., aspect, 0.2, 10.0
   ));
   vec3 dir = normalize(transform(inv_proj_mat, p3));
   float dist = -1.;
@@ -72,7 +72,7 @@ void main() {
     dist += lastHit.dist;
     if (dist > 50.)
       discard;
-    if (abs(lastHit.dist) < 1./1024.)
+    if (abs(lastHit.dist) < 1./512.)
       break;
   }
   vec4 c = hsv(0.,lastHit.which,1.);//1.-pow(sf(lastHit.p.x/10./2.+.5)+0.3, 2.));

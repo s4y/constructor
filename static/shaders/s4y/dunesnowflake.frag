@@ -127,6 +127,6 @@ void main() {
   ));
 
   gl_FragColor += march(p3);
-  gl_FragColor += texture(last, p3.xy/2.+.5) * (1.-gl_FragColor.a) * 0.5;
+  gl_FragColor += texture(last, p3.xy/2.+.5) * (1.-gl_FragColor.a);
 
 }

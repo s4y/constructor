@@ -36,8 +36,9 @@ export default class Desk {
     this.ctx = Object.create(ctx);
     this.bpmSampler = new BPMSampler();
     this.bpmSampler.onchange = (bpm, offset) => {
-      this.ctx.knobs.set('bpm', bpm);
-      this.ctx.knobs.set('downbeat', reserve.now());
+      if (!isNaN(bpm))
+        this.ctx.knobs.set('bpm', bpm);
+      this.ctx.knobs.set('downbeat', Date.now());
       this.lastBeat = null;
       this.showBPM();
     };
@@ -49,7 +50,8 @@ export default class Desk {
       if (e.shiftKey || e.metaKey || e.altKey)
         return;
       if (e.code == 'KeyR') {
-        this.ctx.knobs.set('downbeat', reserve.now());
+        console.log('diff', reserve.now() - Date.now());
+        this.ctx.knobs.set('downbeat', Date.now());
         this.ctx._currentDownbeat = null;
         this.lastBeat = null;
         e.preventDefault();
@@ -106,6 +108,9 @@ export default class Desk {
     this.show = new Show(this.ctx);
     this.show.addObserver(layers => this.showChanged(layers[this.ctx.showTag].layers));
   }
+  get previewLayers() {
+    return this.layers.filter(l => l.config.preview !== false);
+  }
   handleControllerEvent(k, v) {
     if (this.faders[k])
       this.faders[k].value = v;
@@ -120,7 +125,7 @@ export default class Desk {
     this.faders.length = 0;
     while (this.el.firstChild)
       this.el.removeChild(this.el.firstChild);
-    const previews = this.layers.concat(this.outputs);
+    const previews = this.previewLayers.concat(this.outputs);
     for (let i = 0; i < previews.length; i++) {
       const ii = i;
       const prog = previews[i];
@@ -135,7 +140,7 @@ export default class Desk {
     }
   }
   uniformsChanged() {
-    for (const layer of [this.programOutput, ...this.layers])
+    for (const layer of [this.programOutput, ...this.previewLayers])
       layer.uniformsChanged();
   }
   showBPM() {
@@ -144,7 +149,7 @@ export default class Desk {
     if (!bpm || !downbeat)
       return;
 
-    const beat = this.ctx.beat;
+    const beat = Math.floor(this.ctx.beat);
     if (beat == this.lastBeat)
       return;
     this.bpmTextNode.nodeValue = Math.round(bpm * 100) / 100;
@@ -161,8 +166,10 @@ export default class Desk {
     const canvas = this.ctx.canvas.canvasEl;
     const gl = this.ctx.canvas.gl;
     this.error = null;
-    const previews = this.layers.concat(this.outputs);
+    const previews = this.previewLayers.concat(this.outputs);
     for (let i = 0; i < previews.length; i++) {
+      // if (i < this.layers.length)
+      //   continue;
       const output = previews[i];
       const el = this.renderEls[i];
       const rect = el.getBoundingClientRect();

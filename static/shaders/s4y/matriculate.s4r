@@ -1,0 +1,59 @@
+:def sample { =t
+ -0.2 1.0 t 40 mod dup 1 mod - 1 + * +
+ 0.45
+ vec2 uv + =uv
+ uv
+ 16 1024 /
+ 32 64 /
+ vec2 * =uv
+ fb'matrixCode uv tex .r
+ p .x abs p .y abs max 1 step *
+ }
+
+{
+fitp
+p =ooop
+
+# t 0.1 * =t
+
+0 0 vec2
+:loop 51 { dup .y =i .x =x
+ p
+ t i * 2 / dup 1 mod - i 10 * + sin 2 *
+ i 9.6 * sin
+ 0 vec3 + =p
+ p 0 t dup 0.025 mod - 1 mod bal 0 vec3 + =p
+ p 50 * =p
+ p =op
+ 
+ ooop .y 10 * i + t + dup 1 mod - # op dup 1 mod - .y t 10 * + i 1 * + 50 mod
+ sample
+ op .x abs 1 step *
+ x max i 1 + vec2
+ }
+
+.x 1 0 0 1 vec4 *
+
+}
+
+fb'f uv tex 2 256 / - +
+drawto'f
+fb'f uv tex draw
+
+
+
+
+
+
+
+bail
+
+uv =uv
+{ 0.2 64 * =xa uv .x 0.1 - xa / param'beat 1 * dup 1 mod - 10 mod 1 dims .x }
+uv .y
+vec2 =uv
+fb'matrixCode uv tex
+p .x abs p .y abs max 1 step *
+1 0 0 1 vec4 blend
+}
+draw

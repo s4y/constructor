@@ -1,3 +1,4 @@
+:fn floor 1
 :fn sin 1
 :fn cos 1
 :fn acos 1
@@ -104,6 +105,7 @@ mat4 =kIdentity
 :def cdist 0 vec2.1 p .xy distance
 :def polar cdist 2 PI angle / / vec2
 :def fitp p aspect 1 max 1 aspect / 1 max 1 vec3 * =p
+:def unfitp p aspect 1 max 1 aspect / 1 max 1 vec3 / =p
 :def dup { =x x x }
 :def swap { =x =y x y }
 :def inv 1 swap -

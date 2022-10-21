@@ -1,0 +1,15 @@
+{
+fitp
+angle PI / 2 / sin 2 / abs 0.1 + sf 0.9 * dup =aa
+cdist 5 * 1 - step inv dup =bb
+aa 1.0 * bb 1 hsv *
+}
+
+{
+p 0.99 * =p
+fb'f uv tex 0.9 * +
+}
+
+drawto'f
+
+fb'f uv tex draw

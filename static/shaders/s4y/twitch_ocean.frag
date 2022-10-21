@@ -6,8 +6,8 @@ uniform float u_rot_x;
 uniform float u_rot_y;
 uniform float u_rot_z;
 uniform float u_head_glow;
-float u_sea_hue = 0.1;
-float u_sea_hue_amt = -0.2;
+float u_sea_hue = 0.8;
+float u_sea_hue_amt = -0.1;
 uniform float u_mouth_decoration;
 uniform float u_mouth_decoration_style;
 uniform float u_mouth_sea;
@@ -15,7 +15,7 @@ uniform float u_bpm;
 uniform float u_eye_decoration;
 uniform float u_eye_shape;
 float u_activity_min = 0.1;
-float u_activity_max = 0.3;
+float u_activity_max = 0.8;
 uniform float u_bob_amount;
 uniform float sndGo;
 uniform mat4 inv_camera_mat;
@@ -50,18 +50,19 @@ SeaHit sdSea(vec3 p) {
 
   p *= 1.;
   // p += tan(p/2.) * 1.01;
-  p.z -= t * 10.;
+  p.z -= t * .1;
 
   p = transform(rotZ(p.z * 0.2), p);
 
-  // p.x += 2e1 + 0.5 + t * 0.1;
+  p.x += 2e1 + 0.5 + t * 0.1;
   // p.y /= 2.;
   p .y -= 1.5;
-  p.xy -= mod(p.xy, .5);
+  // p.xy -= mod(p.xy, .5);
 	vec3 bb = cos(p*0.5*sin(p.y*5.)) - 0.2 * ssf(0.1);
 
   return SeaHit(
-      (length(bb) - (1. + ssf01 * 0.05)) / 1., p);
+      sdSphere(p, 0.1), p);
+      // (length(bb) - (1. + ssf01 * 0.05)) / 1., p);
 }
 
 vec3 estimateSeaNormal(vec3 p) {
@@ -95,7 +96,7 @@ vec4 marchSea(vec3 p) {
   vec3 norm = estimateSeaNormal(hitP*vec3(1, 1, -0.2));
 
   vec4 color = vec4(0, 0, 0, 1);
-  color += hsv(u_sea_hue  + hitP.z * 0.0 + sf(mod(abs(length(hitP)) / 100., 1.)) * u_sea_hue_amt, (1.-sf(hitP.z)*0.0), .5 * (fsf(abs(-mod((abs(hit.p.y))/100., 1.)))) * 0.0 + .1) * dot(hitP, normalize(vec3(0, 1, -2)));
+  color += hsv(u_sea_hue  + hitP.z * 0.01 + sf(mod(abs(length(hitP)) / 100., 1.)) * u_sea_hue_amt, (1.-sf(hitP.z)*0.0), .5 * (fsf(abs(-mod((abs(hit.p.y))/100., 1.)))) * 0.0 + .1) * dot(hitP, normalize(vec3(0, 1, -2)));
   // color += vec4(0, 0, 1, 1) * clamp(dot(hitP, normalize(vec3(0, -1, 0))), 0., 1.);
   return color;
 }

@@ -15,6 +15,7 @@ const qs = location.search
   .map(c => c.split('=').map(decodeURIComponent))
   .reduce((params, [k, v]) => (params[k] = v, params), {});
 
+import Peer from '/lib/Peer.js'
 import Canvas from '/lib/Canvas.js'
 import Gradual from '/lib/Gradual.js'
 import FPSView from '/lib/FPSView.js'
@@ -26,6 +27,7 @@ import Observers from './lib/Observers.js'
 import RemoteCamera from './lib/RemoteCamera.js'
 import ShaderProgram from './lib/ShaderProgram.js'
 import Knobs from './lib/Knobs.js'
+import WSConnection from './lib/WSConnection.js'
 
 import * as THREE from '/deps/three/build/three.module.js'
 import { GLTFLoader } from '/deps/three/examples/jsm/loaders/GLTFLoader.js'
@@ -70,11 +72,11 @@ const createStatsTracker = () => {
       const middle = (sortedFps.length + 1) / 2;
       const median = sortedFps[Math.floor(middle)];
       if (median < 58) {
-        this.onPerformanceNeeded();
+        // this.onPerformanceNeeded();
         this.fpsHistory.length = 0;
       }
       if (median > 30 && this.fpsHistory.length > 19) {
-        this.onPerformanceGood();
+        // this.onPerformanceGood();
         this.fpsHistory.length = 0;
       }
     },
@@ -92,7 +94,7 @@ document.body.onload = () => {
 };
 
 stats.onPerformanceNeeded = () => {
-  return;
+  // return;
   if (canvas.downscale < 3) {
     canvas.downscale += 0.5;
     canvas.resize();
@@ -100,8 +102,8 @@ stats.onPerformanceNeeded = () => {
 };
 
 stats.onPerformanceGood = () => {
-  return;
-  if (canvas.downscale > 1) {
+  // return;
+  if (canvas.downscale > 0.5) {
     canvas.downscale -= 0.25;
     canvas.resize();
   }
@@ -216,6 +218,15 @@ const makeVideoTexture = cb => {
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
   gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
 
+  let haveFrame = false;
+
+  const vfcb = () => {
+    haveFrame = true;
+    video.requestVideoFrameCallback(vfcb);
+  }
+
+  // vfcb();
+
   gl.texImage2D(
     gl.TEXTURE_2D, 0, gl.LUMINANCE,
     128, 128, 0,
@@ -226,6 +237,7 @@ const makeVideoTexture = cb => {
     const now = Date.now();
     if (lastUpdate == now)
       return;
+    haveFrame = false;
     lastUpdate = now;
     if (!video.videoWidth || !video.videoHeight)
       return;
@@ -258,6 +270,7 @@ const makeVideoTexture = cb => {
 
 const ac = new (window.AudioContext || window.webkitAudioContext)();
 const mixer = ac.createGain();
+window.mixer = mixer;
 const kMaxFrequency = 15000;
 const fastFFT = makeFFT(0.0, 2048, canvas.gl.LINEAR);
 const medFFT = makeFFT(0.87, 4096, canvas.gl.LINEAR);
@@ -266,6 +279,7 @@ const slowFFT = makeFFT(0.94, 8192, canvas.gl.LINEAR);
 if (navigator.mediaDevices) {
   navigator.mediaDevices.getUserMedia({
     audio: {
+      sampleRate: 48000,
       noiseSuppression: false,
       echoCancellation: false,
     }
@@ -312,13 +326,14 @@ const ctx = {
     if (Math.abs(diff) > 1000)
       this._currentDownbeat = officialDownbeat;
     else
-      this._currentDownbeat += diff * 0.01;
+      this._currentDownbeat += diff * 0.1;
+    this._currentDownbeat = officialDownbeat;
     return this._currentDownbeat;
   },
   get bpm() { return this.knobs.knobs.bpm; },
   get beat() {
     const { bpm, downbeat } = this;
-    return (bpm && downbeat) ? Math.floor(((this.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
+    return (bpm && downbeat) ? (((this.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
   },
   // get beatAmt() { return Math.pow(1-(this.beat%1), 2); },
   get beatAmt() { return this.beat%1; },
@@ -372,33 +387,45 @@ const ctx = {
   },
   textures: {
     remoteCam: makeVideoTexture(async video => {
-      const rc = new RemoteCamera();
-      video.srcObject = rc.stream;
-      video.autoplay = true;
-      video.playsInline = true;
-      video.play();
+      const id = Math.random();
 
-      let createdSource = false;
-      rc.onaddtrack = () => {
-        if (createdSource)
+      const peer = new Peer({
+        send(type, body) {
+          console.log('do send', body);
+          reserve.broadcast({ type: 'rtc', from: id, body });
+        }
+      }, 'remoteCam', null, false);
+      peer.videoEl = video;
+      video.muted = true;
+      video.autoplay = true;
+      video.controls = true;
+
+      window.addEventListener('broadcast', e => {
+        if (e.detail.type != 'rtc')
           return;
-        if (!rc.stream.getAudioTracks().length)
+        const body = e.detail.body;
+        console.log('maybe recv', body);
+        if (body.to != id)
           return;
-        ac.createMediaStreamSource(rc.stream).connect(mixer);
-        createdSource = true;
-      };
+        console.log('do recv', body.body);
+        peer.receiveFromPeer(body.body);
+      });
     }),
     webcam: makeVideoTexture(async video => {
       const stream = await navigator.mediaDevices.getUserMedia({
         video: {
-          deviceId: '40727b8c1101a37e261e0f6c78a8eddf8a30a21bbec6dee7c277da0caa7441ce',
+          // deviceId: qs.videoDeviceId,
+          // aspectRatio: 16/9,
+          // width: { max: 1920 },
+          // height: { max: 1080 },
         }
       });
+      window.stream = stream;
       reserve.broadcast(await navigator.mediaDevices.enumerateDevices());
       video.srcObject = stream;
       video.muted = true;
       video.playsInline = true;
-      video.play();
+      await video.play();
     }),
     video1: makeVideoTexture(),
     screen: makeVideoTexture(),
@@ -483,6 +510,16 @@ if ('program' in qs) {
   document.body.addEventListener('click', e => {
     document.body.webkitRequestFullscreen();
   });
+} else if (false) {
+  for (const id of ['0', '1']) {
+    const frame = document.createElement('iframe');
+    frame.src = `/ledsign/?preview&id=${id}`;
+    frame.style.display = 'block';
+    frame.style.height = 'calc(100vw*7/120 + 4px)';
+    frame.style.width = '100vw';
+    frame.style.border = 'none';
+    document.body.insertBefore(frame, document.body.firstChild);
+  }
 }
 
 // if ('program' in qs) {
@@ -617,7 +654,6 @@ window.addEventListener('broadcast', e => {
         ctx.midiClock.t++;
     }
   } else if (type == 'editor') {
-    return;
     if (!ctx.editorState)
       ctx.editorState = {};
     Object.assign(ctx.editorState, value);
@@ -702,18 +738,20 @@ const castScreen = async () => {
 }
 window.castScreen = castScreen;
 
-let laserWs;
+let laserConn;
 let laserFn = null;
 let laserReady = false;
 
 window.setLaserFn = f => {
-  if (!laserWs) {
-    laserWs = new WebSocket('ws://127.0.0.1:8765/laser');
-    laserWs.onmessage = e => {
+  if (!laserConn) {
+    laserConn = new WSConnection('ws://127.0.0.1:8765/laser');
+    laserConn.onmessage = e => {
+      // console.log(e);
       // buf_free = JSON.parse(e.data).free
       laserReady = true;
-      do_laser_comms();
+      // do_laser_comms();
     };
+    laserConn.connect();
   }
   laserFn = f;
 };
@@ -736,7 +774,7 @@ const do_laser_comms = () => {
     ab[(i*5)+3] = scale(point[3]);
     ab[(i*5)+4] = scale(point[4]);
   }
-  laserWs.send(ab);
+  laserConn.ws.send(ab);
   laserReady = false;
   return;
   // while (buf_free > 5000) {
@@ -761,6 +799,8 @@ const do_laser_comms = () => {
   // }
 }
 
+setInterval(do_laser_comms, 6 + 2/3);
+
 let ws;
 const connectWs = () => {
   if (ws)
@@ -773,28 +813,6 @@ const connectWs = () => {
   };
 }
 connectWs();
-
-class WSConnection {
-  constructor(url) {
-    this.url = url;
-  }
-
-  connect() {
-    if (this.ws)
-      this.ws.close();
-    this.ws = new WebSocket(this.url);
-    this.ws.onclose = e => {
-      this.open = false;
-      setTimeout(() => this.connect(), 1000);
-    };
-    this.ws.onopen = e => {
-      this.open = true;
-    };
-    this.ws.onmessage = e => {
-      this.onmessage(JSON.parse(e.data));
-    };
-  }
-}
 
 const ledState = []
 
@@ -841,9 +859,45 @@ if ('ledSign' in qs) {
   document.body.appendChild(ledFrame);
 }
 
+if ('djLink' in qs) {
+  const frame = document.createElement('iframe');
+  frame.src = 'djlink.html';
+  frame.style.display = 'none';
+  document.body.appendChild(frame);
+}
+
+if ('viveTrackers' in qs) {
+  const frame = document.createElement('iframe');
+  frame.src = 'vivelink.html';
+  frame.style.display = 'none';
+  document.body.appendChild(frame);
+}
+
+if ('audiosend' in qs) {
+  const frame = document.createElement('iframe');
+  frame.src = 'audiosend.html';
+  frame.style.display = 'none';
+  document.body.appendChild(frame);
+}
+
 window.addEventListener('sourcechange', e => {
   if (e.detail.indexOf('/ledsign/') != -1)
     e.preventDefault();
 });
 
 document.body.classList.add('ready');
+
+if ('pirateSesh' in qs)
+  document.documentElement.classList.add('pirateSesh');
+
+if ('spoopy' in qs)
+  document.documentElement.classList.add('spoopy');
+
+if ('theNet' in qs)
+  document.documentElement.classList.add('theNet');
+
+if ('shadeWall' in qs)
+  document.documentElement.classList.add('shadeWall');
+
+if ('h0l0' in qs)
+  document.documentElement.classList.add('h0l0');

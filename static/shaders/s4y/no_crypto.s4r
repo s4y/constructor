@@ -2,13 +2,14 @@ load'images/no_crypto.png =logo
 
 {
 p 0.5 1 1 vec3 * =p
+p 1.2 * =p
 p 0 -0.5 0 vec3 + =p
 p 4 * =p
 logo uv tex inv
 
 .r
 
-0.9 t 0.1 * sin 0.1 * + 1 1 hsv *
+0.9 t 0.6 * sin 0.1 * + p .x 0.3 * +  1 1 hsv *
 
 
 draw

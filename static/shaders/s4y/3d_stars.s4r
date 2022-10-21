@@ -29,14 +29,16 @@ p =op
 
 p inv_proj_mat transform normalize =direction
 
-:def marchOnce direction * p + sceneDistance
+:def project direction * p + # inv_camera_mat proj_mat * transform
+
+:def marchOnce project sceneDistance
 
 2
 :loop 40
  dup marchOnce 0 max +
 =dist
 
-dist direction * p + inv_camera_mat proj_mat * transform marchOnce
+dist marchOnce
 =surfDist
 
 dist 29 / inv =bri

@@ -1,6 +1,10 @@
+# p 0 0.7 0 vec3 + =p
+
+t 0.01 * =t
+
 :def wave { =n
  p .y unbal
- p .x 1 n 10 * + * t 1.1 n 10 * + sin * + sin n / 0.1 * n 10 / ssf * +
+ p .x 1 n 10 * + * t 1.1 n 10 * + sin * + sin n / 0.1 * n 10 / ssf 0 * * +
  n step }
 
 0.1 =n
@@ -14,6 +18,6 @@
 1 * 1 pow # 0.5 +
 =bri
 
-bri 2 * 0.8 bri hsv 
+bri 1.1 * 0.8 bri hsv 
 # bri -0.2 * 0.1 + t 0.0 * + bri 10 / 1 mod ssf 1 pow 1.2 swap - bri 1 + hsv draw
 draw

@@ -15,7 +15,7 @@ yee *
 {
 1 cdist sf 0.5 * - p * =p
 # 0.4 sf 0.01 * p + =p
-p 0.01 rotZ transform =p
+p 0.1 param'beat 8 / PI * 2 * sin * rotZ transform =p
 fb'f uv tex 0.9 *
 }
 0.05 t 0.0 * + 0.0 0 vec3 addHsv

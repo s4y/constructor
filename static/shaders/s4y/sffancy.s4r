@@ -1,7 +1,6 @@
-p .x abs 2 / fsf 0.05 - 0 max 0 1 clamp 4 pow dup =amt
-p .y 2 * abs step inv dup inv =height
+p .x abs 4 / 0.1 + fsf 0.0 - 2 pow 0 max 0 1 clamp 4 pow dup =amt
+p .y 1.25 * abs step inv dup inv =height
 
-inv
-0 param'thump 0 hsv *
+fb'last uv tex *
 
 draw

@@ -1,0 +1,21 @@
+
+p midi'knob1 rotZ transform =p
+
+p .x unbal fsf p .y abs 10 *  step inv
+
+1 0 1 1 vec4 *
+
+
+{
+p 0.9 * =p
+fb'f uv tex 0.9 * +
+}
+
+drawto'f
+
+
+
+
+
+fb'f uv tex
+draw

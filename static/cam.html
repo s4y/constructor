@@ -6,11 +6,15 @@
 <select id=deviceSelector></select>
 <script type=module>
 
+import Peer from './lib/Peer.js';
+
 const previewEl = document.getElementById('preview');
 const deviceSelectorEl = document.getElementById('deviceSelector');
 const storageKey = 'onstage.deviceId';
 let deviceId = localStorage[storageKey];
 let stream;
+
+const peers = {};
 
 deviceSelectorEl.addEventListener('input', e => {
   deviceId = localStorage[storageKey] = deviceSelectorEl.value;
@@ -33,7 +37,6 @@ const reopenCamera = async () => {
     }
   });
   previewEl.srcObject = stream;
-  reserve.broadcast({ type: 'cam' });
 };
 
 const refreshDevices = async () => {
@@ -52,47 +55,21 @@ const refreshDevices = async () => {
 
 reopenCamera().then(refreshDevices);
 
-const peerConnections = {};
-window.addEventListener('broadcast', async e => {
-  if (!e.detail.initialOffer)
+window.addEventListener('broadcast', e => {
+  if (e.detail.type != 'rtc')
     return;
-  const initialOffer = e.detail.initialOffer;
-  if (!(initialOffer in peerConnections)) {
-    const pc = peerConnections[initialOffer] = new RTCPeerConnection();
-    pc.onsignalingstatechange = e => {
-      console.log('state', pc.signalingState);
-    };
-    pc.onnegotiationneeded = async () => {
-      await pc.setLocalDescription();
-      console.log('neg send', pc.localDescription);
-      reserve.broadcast({
-        response: {
-          initialOffer,
-          answer: pc.localDescription,
-        }
-      });
-    };
-    pc.onicecandidate = e => {
-      reserve.broadcast({
-        response: {
-          initialOffer,
-          ice: e.candidate,
-        }
-      });
-    };
-    if (stream)
-      for (const track of stream.getTracks())
-        pc.addTrack(track, stream);
-  }
-  const pc = peerConnections[initialOffer];
-  if (e.detail.offer) {
-    await pc.setRemoteDescription(e.detail.offer);
-    if (e.detail.offer.type == 'offer')
-      pc.onnegotiationneeded();
-  }
-  if (e.detail.ice) {
-    pc.addIceCandidate(e.detail.ice);
-  }
+  if (e.detail.body.to != 'remoteCam')
+    return;
+  const from = e.detail.from;
+  const peer = (peers[from] ||= new Peer({
+      send(type, body) {
+        console.log('do send', body);
+        reserve.broadcast({ type: 'rtc', from: 'remoteCam', body });
+      }
+    }, from, stream, true));
+  console.log('recv', e.detail.body.body);
+  peer.receiveFromPeer(e.detail.body.body);
+
 });
 
 window.addEventListener('sourcechange', e => {

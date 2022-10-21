@@ -1,0 +1,7 @@
+fb'last uv tex
+.r
+=bri
+
+2 3 / p .x abs ssf 0.5 * 1 hsv bri *
+
+draw

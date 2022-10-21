@@ -1,0 +1,77 @@
+t 2 * =t
+
+:def sd { =p p
+  0 0 3 vec3 + =p
+  p inv_camera_mat transform =p
+  # p t 0.1 * rotX t 0.3 * rotY * transform =p
+  p p .z abs p .y abs max 4 / abs fsf 16 pow 0.2 * 1 / 0 0 vec3 1 swap - * =p
+  # p
+  p .y p .z + 1 * sin unbal 
+  p .x p .z + 1 * sin unbal +
+  p .x 0.3 * p .y + 110 * sin unbal +
+  # 0.002 * 
+  # 1 + * =p
+  p 0.8 sdSphere
+  # p 0.2 0.4 0.2 vec3 sdBox 1 mix
+  2 /
+  }
+
+{
+p =op
+
+p inv_proj_mat transform normalize =direction
+
+:def project direction * p inv_proj_mat transform +
+:def marchOnce project sd
+
+0
+:loop 40
+ dup marchOnce 0 max +
+=dist
+
+dist marchOnce
+=surfDist
+
+dist project estimateNormal
+=norm
+
+:def light { =c =dir
+ norm direction reflect normalize dir normalize dot dup 1 pow 0.5 * swap 10 pow 0.7 * +
+ =bri c bri vec3.1 1 vec4.2 *
+ }
+
+:def scale { =x =min =max x max min - * min + 0 1 clamp }
+
+:def path { =amt
+ { 0 1 amt scale =amt amt inv amt bal 0 vec3 }
+ { 1 2 amt scale =amt amt bal -1 0 vec3 amt 1 swap step inv mix }
+ { 2 3 amt scale =amt amt -1 * amt bal -1 * 0 vec3 amt 1 swap step inv mix }
+ }
+
+1 0 0 1 vec4
+
+0 path
+0 3 / 1 1 hsv
+light 0 max +
+
+# t 1 + 3 mod path
+# 1.7 3 / 1 1 hsv
+# light 0 max +
+
+1 path
+2 3 / 0.5 1 hsv
+light 0 max +
+
+# { norm direction swap reflect normalize 1 1 -1 vec3 * =p fb'last uv tex } +
+
+# surfDist 1 256 / step *
+
+# c .r 0.0 * 1 c .b param'beatAmt 0.1 * - hsv
+
+# dist 1 mod surfDist sf 1 pow + 0.0 dist 10 / inv hsv
+# dist 10 9 ss *
+surfDist 1 256 / step *
+vec4.1
+}
+
+draw

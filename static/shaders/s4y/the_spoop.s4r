@@ -1,0 +1,59 @@
+# param'sndGo 0.1 * =t
+# param'go .01 * =t
+
+:def sdTorus { =t =p
+ p .xz length t - .x p .y vec2
+ length t .y -
+ }
+
+:def sceneDistance { =p
+  p camera_mat transform =p
+  p inv_proj_mat transpose transform =p
+  p PI 2 / rotX transform =p
+  # p t 0.1 *  PI * 2 * rotX 0.8 rotY * transform =p
+  # p 0 0 t 0.1 * vec3 + =p
+  # p 0 0 p .z vec3 + =p
+  # p 0.0 dup 0 swap vec3 + 0.9 balmod =p
+  # p p .z PI * 2 * 2 * rotX p .x rotZ * transform =p
+  # p t 10 /  PI * 2 * rotX 0.8 rotY * transform =p
+  p 0.5 0.2 vec2 sdTorus # -1 *
+  }
+
+{
+p =op
+
+p inv_proj_mat transform normalize =direction
+
+:def project direction * p + inv_camera_mat proj_mat * transform
+:def marchOnce project sceneDistance
+
+-2
+:loop 80
+ dup marchOnce +
+=dist
+
+dist direction * p inv_proj_mat transform + dup =hitP
+hitP marchOnce =surfDist
+
+dist 3 0 ss
+dist sin 0.1 * 0.3 + 0.5 1 hsv *
+draw
+bail
+
+dist 2 / param'beat + sin unbal
+# dup 0.7 * 1 1 hsv *
+dist *
+inv
+vec4.1
+
+# surfDist
+
+draw
+bail
+
+dist 30 / inv =bri
+0.8 bri 0.9 * p .y abs sf 0.0 * + - 0.2 0 1 clamp 10 pow 1 hsv
+bri 0.5 1 ss *
+}
+
+draw

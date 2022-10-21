@@ -117,9 +117,9 @@ vec4 march(vec3 p) {
 
   light += hsv(0./3., .0, 1.) * pow(clamp(dot(normalize(vec3(-1,0.5,1)), norm), 0., 1.), 2.);
   light += hsv(2./3., .0, 1.) * pow(clamp(dot(normalize(vec3(1,1,1)), norm) + 0.1, 0., 1.), 2.);
-  // light += vec4(1.) * smoothstep(0., 1., dist - enterDist);
-  // light = pow(light, vec4(5.));
-  // light = bg(transform(inverse(inv_proj_mat), hitP)) * (1.-light.a) + light;
+  light += vec4(1.) * smoothstep(0., 1., dist - enterDist);
+  light = pow(light, vec4(5.));
+  light += bg(hitP) * (1.-light.a) + light;
   // light = mulHsv(bg(norm + hitP), vec3(1,0.5,0.9)) * (1.-light.a) + light;
   // light += bgSky(texP) * (1.-light.a);
   // light *= smoothstep(7., 6., dist);
@@ -137,6 +137,7 @@ void main() {
   ));
 
   gl_FragColor += march(p3);
+  gl_FragColor += vec4(texture(filt, p3.xy/2.+.5).rgb, 1.) * (1.-gl_FragColor.a);
   // gl_FragColor += bgSky(p3) * (1.-gl_FragColor.a);
 
 }

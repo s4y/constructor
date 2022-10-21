@@ -3,13 +3,13 @@
 // uniform sampler2D filt;
 // uniform float filt_aspect;
 
-const int kSteps = 120;
+const int kSteps = 80;
 const float kEpsilon = 1./1024.;
 
 uniform float sndGo;
 uniform sampler2D filt;
 
-mat4 inv_proj_mat;
+uniform mat4 inv_proj_mat;
 float aspect;
 
 struct Hit {
@@ -123,16 +123,16 @@ vec4 march(vec3 p) {
   vec3 norm = estimateNormal(hitP);
   vec3 texP = p + lightdir;//norm * -0.3 + transform(inverse(inv_proj_mat), hitP);
 
-  // light += hsv(0./3. + sf(lightdir.x), .0, .2) * pow(clamp(dot(normalize(vec3(-1,0.5,1)), norm), 0., 1.), 2.);
+  light += hsv(0./3. + sf(lightdir.x), .0, .2) * pow(clamp(dot(normalize(vec3(-1,0.5,1)), norm), 0., 1.), 2.);
   light += hsv(2./3. + sf(lightdir.x), .0, 1.) * pow(clamp(dot(normalize(vec3(1,1,1)), norm) + 0.1, 0., 1.), 10.);
   // light += vec4(1.) * smoothstep(0., 1., dist - enterDist);
   // light = pow(light, vec4(5.));
   // light = bg(transform(inverse(inv_proj_mat), hitP)) * (1.-light.a) + light;
   // light = mulHsv(bg(norm + hitP), vec3(1,0.5,0.9)) * (1.-light.a) + light;
   light += pow(texture(filt, (hitP.xy*4.-norm.xy*0.5)/2.+.5) * 0.9, vec4(1)) * (1.-light.a);
-  // light *= smoothstep(7., 6., dist);
+  light *= smoothstep(.7, -0.5, dist);
   light *= smoothstep(kEpsilon*2., kEpsilon, surfaceDist);
-  light.a = 1.;
+  // light.a = 1.;
   return light;
 }
 
@@ -140,9 +140,6 @@ void main() {
   commonInit();
 
   aspect = u_resolution.x/u_resolution.y;
-  inv_proj_mat = inverse(perspectiveProj(
-    PI/3.5, aspect, 0.3, 10.0
-  ));
 
   gl_FragColor += march(p3);
   gl_FragColor += texture(filt, p3.xy/2.+.5) * (1.-gl_FragColor.a);

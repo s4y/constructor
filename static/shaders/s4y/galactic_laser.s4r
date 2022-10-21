@@ -1,0 +1,10 @@
+t 5 / 1 mod inv 2 pow =beat
+
+c 10 * PI * 2 * sin 0.2 * c bal abs inv *
+c 10 * PI * 2 * cos 0.2 * c bal abs inv *
+
+0.4
+0.4
+0.4
+
+vec5 lase

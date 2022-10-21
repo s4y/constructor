@@ -1,9 +1,10 @@
 #include "./common.glsl"
 
-const int kSteps = 180;
-const float kEpsilon = 1./4096.;
+const int kSteps = 120;
+const float kEpsilon = 1./1024.;
 
 uniform float sndGo;
+uniform float beat;
 
 mat4 inv_proj_mat;
 float aspect;
@@ -14,14 +15,15 @@ struct Hit {
 };
 
 Hit sd(vec3 p) {
-  float t = t * 0.1 + sndGo * 0.01;
+  float t = t * 0.1 + sndGo * 0.5 - sin(beat / 8. * PI) * 0.1;
   vec3 op = p;
   p.z += 0.5;
   
   p.x -= 0.1;
   p.y -= 0.1;
 
-  p = transform(rotY(t * 0.1) * rotX(t * 0.11), p);
+  p = transform(rotY(t * 0.1) * rotX(t * 0.11) * rotZ(t * 0.2), p);
+  p.x += 0.5 + t;
 
   if (op.z < 10.)
     p = mod(p + 0.25, vec3(.5)) - 0.25;

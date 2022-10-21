@@ -13,7 +13,7 @@ t sin 2 / .5 + 5 pow *
 
 {
 0.9 p .x 2 / abs - =bbri
-bbri 5 pow 0.01 * t 0.01 * + 0.8 sf 0.8 * + 1 1 hsv
+bbri 5 pow 0.01 * 0.0 sf -0.2 * + 1 1 hsv
 bri * bbri 0.1 + 20 pow *
 }
 
@@ -27,7 +27,7 @@ bri * bbri 0.1 + 20 pow *
 swap blend
 
 {
-0.05 sf =bump
+param'thump 0.8 * =bump
 1 bump 4 pow 0.2 * -
 1 1 vec3 p * =p
 0.99 bump 0.05 * - p * =p

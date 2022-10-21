@@ -1,0 +1,6 @@
+load'images/kbd.png =img
+
+fitp
+img uv tex
+normalize
+draw

@@ -1,0 +1,86 @@
+fitp
+# {
+# p 0.00 -0.23 0 vec3 + =p
+# cdist 0.1 0.02 ss
+# 0.1 0.9 1 hsv *
+# param'thump *
+# draw
+# }
+
+
+{
+# p -2.53 -0.6 0 vec3 + =p
+# p .x unbal p .y 0.01 * + abs 0.09 step
+# p .y unbal 0.18 - abs 0.158 step *
+=mask
+
+
+# p 0.99 0.62 0 vec3 + =p
+# p 1 * =p
+
+# 0.0 0.1 sf 0.1 * - 1 0.5 hsv
+# p p .y 10 * t 10 * + sin param'beatAmt inv 10 pow * 0.1 * 0 0 vec3 + =p
+# # 0 0 1 1 vec4
+# {
+# p param'beat PI * 2 * 8 / rotZ transform =p
+# p .x abs p .y abs max 10 * param'sndGo 0.8 * param'beat 0.75 + PI * 2 * sin unbal 0.4 * - - sin unbal 8 pow *
+# }
+# 0 0.4 0.3 hsv
+# param'beat 4 / 0.5 + PI * 2 * sin unbal 100 pow 0.5 * 0.5 + *
+# blend
+# cdist 0.4 0.1 ss *
+# .rgb 1 vec4.2
+# mask *
+# # param'beatAmt 0.1 * -
+# }
+# draw
+
+:def paint { =h =w =y =x
+ p x y 0 vec3 - =p
+ p 1 w / 1 h / 1 vec3 * =p
+ p .x abs p .y abs max 1 step
+ p w h / 1 1 vec3 * } =p
+
+{
+p
+0.02 rotX
+0 0 -4.1 translate *
+PI 2 / 1 0.1 10 perspectiveProj inverse *
+transform =p
+0.52 -0.02 0.19 1 paint
+
+0 1 p .x p .y 10 * * abs 1 mod sf 0.5 0.8 ss hsv
+*
+draw
+}
+
+{
+1.28 -0.02 0.17 1 paint
+
+0 1 p .x p .y 10 * * abs 1 mod sf 0.5 0.8 ss hsv
+*
+draw
+}
+
+{
+-0.8 -0.02 0.072 1 paint
+
+0 1 p .x p .y 10 * * abs 1 mod sf 0.5 0.8 ss hsv
+*
+draw
+}
+
+bail
+
+
+{
+-0.58 p .y unbal 0.1 * + -0.00 0.16 1.36 paint
+
+0.6 1 1 hsv
+param'beat 4 / 0.25 + PI * 2 * sin unbal 100 pow 0.5 * 0.5 + *
+cdist 1.5 0.8 ss *
+.rgb 1 vec4.2
+*
+draw
+}
+

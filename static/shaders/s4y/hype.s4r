@@ -1,0 +1,41 @@
+fb'filt uv tex
+draw
+
+:def tx
+  -0.3 -0.15 0.1 translate
+  PI 2 / rotX *
+  t sin 0.7 * rotX *
+  t 1.8 * rotY *
+  proj_mat *
+  0 0 -1 translate *
+
+vert dup =overt
+4 vec3.1 1 vec4.2 /
+# PI 2 / rotX * =vert vert
+# param'sndGo dup 0.5 mod - PI * vert .z 2 / 1 - fsf 0.2 * + rotX *
+# param'sndGo dup 0.7 mod - sin 0.01 * rotY *
+tx * =vert vert
+0 overt .x 100 * t 10 * + sin 0.02 * 0 0 vec4 +
+# vert .z 10 * t + sin 0.1 * 0 0 0 vec4 +
+=vert
+
+loadGltf'hype =mesh
+
+norm dup =onorm tx inverse transpose transform normalize =norm
+p =op
+p 4 / tx transform =p
+
+{
+p 0 0 1 vec3 + norm reflect =p
+fb'filt uv tex inv
+}
+
+onorm .y abs 0.99 step inv *
+
+0 0
+norm 0 1 0 vec3 dot
+hsv blend
+
+#0 0 p .x 200 / 0.5 + abs fsf 0.8 step hsv
+#0 0 1 hsv
+draw

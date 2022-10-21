@@ -13,6 +13,8 @@ const createFBPair = (ctx, copyFrom) => {
   return {
     get w() { return fbs[0].viewport[2] },
     get h() { return fbs[0].viewport[3] }, 
+    get dims() { return fbs[0].dims; },
+    set dims(dims) { fbs.forEach(fb => fb.dims = dims); },
     get tex() {
       return copyFrom ? copyFrom.tex : fbs[0].tex;
     },
@@ -377,6 +379,8 @@ const compile = (gl, parseTree, globals) => {
           valueType: 'float',
           get value() {
             const fb = globals.framebuffers[tag];
+            if (!fb)
+              return 1;
             return (fb.w / fb.h) || 1;
           },
         });
@@ -579,7 +583,9 @@ const compile = (gl, parseTree, globals) => {
       });
     }}],
     drawto: [{ type: 'native', fn: (stack, tag) => {
-      const target = globals.framebuffers[tag] || (globals.framebuffers[tag] = createFBPair(ctx));
+      const [name, dimsStr] = tag.split(`'`);
+      const target = globals.framebuffers[name] || (globals.framebuffers[name] = createFBPair(ctx));
+      target.dims = dimsStr ? dimsStr.split('x').map(x => +x) : null;
       tasks.push({
         type: 'draw',
         target,
@@ -1182,10 +1188,10 @@ const toJS = (tree, globals) => {
     ...jsEnv,
     fsf: (v => globals.freqBuf[Math.floor(v*globals.fastFreqBuf.length)]/255),
     sf: (v => globals.freqBuf[Math.floor(v*globals.freqBuf.length)]/255),
-    t: globals.t - 0.07,
+    get t() { return globals.t - 0.07 },
     get beat() { return globals.ctx.params.beat; },
   };
-  console.log('wut');
+  // console.log('wut');
   const f = new Function(...Object.keys(env), 'c', 'return ' + serialize(tree));
   return (...args) => {
     return f.call(null, ...Object.values(env), ...args);
@@ -1400,10 +1406,10 @@ float fsf(float at) {
       });
     } else if (task.type === 'lase') {
       const f = toJS(task.frag, globals);
-      console.log(f);
+      // console.log(f);
       setTimeout(() => {
         window.setLaserFn(() => {
-          const ret = new Array(500);
+          const ret = new Array(200);
           for (let i = 0; i < ret.length; i++)
             ret[i] = f(i/ret.length);
           return ret;

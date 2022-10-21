@@ -8,7 +8,7 @@ body {
   margin: 0;
   font: 18px system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
-  overflow: auto;
+  overflow: hidden;
   min-height: 100vh;
 }
 
@@ -18,6 +18,10 @@ body.live {
 
 body:not(.ready) {
   display: none;
+}
+
+#main {
+  position: relative;
 }
 
 body.program:fullscreen {
@@ -35,6 +39,7 @@ body.program:fullscreen {
   width: 100vw;
   height: 100vh;
   display: block;
+  z-index: -1;
 }
 
 #controls {
@@ -228,21 +233,22 @@ body.program #controls {
 }
 
 #editorPreview {
+  display: none;
   transition: all 0.2s;
 
-  font-size: 18px;
+  font-size: 28px;
   position: absolute;
   overflow: hidden;
-  bottom: 20vh;
+  top: 1em;
+  left: 1em;
   opacity: 0.8;
   height: 50vh;
-  width: 75vw;
-  background: rgba(0, 0, 0, 20%);
+  width: 100vw;
+  /* background: rgba(0, 0, 0, 20%); */
   border-radius: 10px;
   display: block;
   display: none;
-  margin: 0 0 0 10vw;
-  padding: 2em;
+  padding: 0em;
   box-sizing: border-box;
   text-shadow:
     1px 0 1px black,
@@ -268,3 +274,48 @@ body.program #controls {
     border-right-color: red;
   }
 }
+
+html.pirateSesh #outputEl {
+  left: 610px;
+  top: 23px;
+  width: 100vh;
+  transform-origin: 50% 40%;
+  transform: perspective(220vw) rotateX(18deg) rotateY(-31deg) rotateZ(3deg) scale(0.99);
+}
+
+html.spoopy #outputEl {
+  left: 0;
+  top: 71vh;
+  height: 50vh;
+  transform-origin: 100% 104%;
+  transform: perspective(29vw) rotateX(0deg) rotateY(-14deg) rotateZ(0deg) scale(5);
+}
+
+html.theNet #outputEl {
+  left: 0;
+  top: 0em;
+  height: 86vh;
+  /* transform-origin: 100% 104%; */
+  /* transform: perspective(29vw) rotateX(0deg) rotateY(-14deg) rotateZ(0deg) scale(5); */
+}
+
+html.h0l0 #outputEl {
+  /* margin-top: 62vh; */
+  /* height: 19vh; */
+  /* transform-origin: 98% 20%; */
+  /* transform: perspective(91vw) rotateX(0deg) rotateY(52deg) rotateZ(0deg) scale(1); */
+}
+
+html.shadeWall #outputEl {
+  left: 26vw;
+  top: 0em;
+  width: 43vw;
+  /* transform-origin: 100% 104%; */
+  /* transform: perspective(29vw) rotateX(0deg) rotateY(-14deg) rotateZ(0deg) scale(5); */
+}
+
+@font-face {
+  font-family: MatrixCode;
+  src: url(assets/matriculate/Matrix Code Font.ttf);
+}
+

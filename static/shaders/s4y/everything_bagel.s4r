@@ -1,0 +1,73 @@
+param'sndGo 0.1 *  =t
+
+param'chaos =chaos
+
+:def sdTorus { =t =p
+ p .xz length t - .x p .y vec2
+ length t .y -
+ }
+
+:def sd { =p p
+  0 0 2 vec3 + =p
+  p inv_camera_mat transform =p
+  p t 0.01 * sin 0.8 * rotY 0.5 PI * t 0.02 * + rotX * transform =p
+  p .x p .y 1.1 * 1 + p .z 0.4 * * * 50 * t PI * + sin 0.2 * p - =p
+  # p 1 + =p
+  # p 2 balmod =p
+  #p 0 p .x 5 / ssf 1.5 * dup swap vec3 0.4 * 1 - * =p
+  # p 0.3 0.2 vec2 sdTorus
+  p 0.3 sdSphere
+  # p 0.2 vec3.1 sdBox 0.5 mix
+  4 /
+  }
+
+{
+p =op
+
+p inv_proj_mat transform normalize =direction
+
+:def project direction * p inv_proj_mat transform +
+:def marchOnce project sd
+
+0
+:loop 40
+ dup marchOnce 0 max +
+=dist
+
+dist marchOnce
+=surfDist
+
+dist project estimateNormal
+=norm
+
+norm -1 * -2.0 0.0 -1.5 vec3 t 0 * PI 2 * 1 3 / * + rotZ transform normalize dot 1 pow
+=bri 2 3 / 0.0 bri hsv 0 max
+
+norm -1 * -2.0 0.0 -1.5 vec3 t 0 * PI 2 * 0 3 / * + rotZ transform normalize dot 1 pow
+=bri 0 0.0 bri hsv 0 max +
+
+norm -1 * -2.0 0.0 -1.5 vec3 t 0 * PI 2 * 2 3 / * + rotZ transform normalize dot 1 pow
+=bri 1.9 3 / 0.0 bri 20 pow  hsv 0 max +
+
+4 * sin unbal
+
+=c
+
+c # .r 0.0 * 1 c .b param'beatAmt 0.1 * - hsv
+
+c c .r c .g max 2 pow *
+
+0.04 0.6 1 hsv *
+
+surfDist 1 256 / step *
+draw
+
+bail
+
+dist 1 mod surfDist sf 1 pow + 0.0 dist 10 / inv hsv
+dist 10 9 ss *
+# surfDist -1 1 step *
+vec4.1
+}
+
+draw

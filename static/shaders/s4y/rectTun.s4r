@@ -4,7 +4,7 @@ fb'last uv tex
 {
 # p cdist inv 4 pow param'beat 1 / 1 mod PI * 2 * sin 20 spow 0.5 * * rotZ transform =p
 fitp
-p t sin cdist inv 1.1 * + rotZ transform =p
+p param'beat t 0.01 * + sin cdist inv 1.1 * + rotZ transform =p
 p .x aspect / abs p .y abs max 0 2 clamp =dis
 dis 1 *
 param'beat 0.1 + dup PI * 2 * sin 0.3 * + - 

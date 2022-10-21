@@ -1,4 +1,4 @@
-0 0 0 1 vec4
+fb'last uv tex
 fitp
-cdist 0.95 step inv *
+cdist 0.95 step *
 draw

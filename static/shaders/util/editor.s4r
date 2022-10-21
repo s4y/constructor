@@ -1,6 +1,12 @@
-p 1 * =p
+p 1.5 * =p
 {
-aspect'editorText 1 1 vec3 p * =p
+fitp
+p 1 aspect'editorText 1 vec3 * =p
 fb'editorText uv tex
-}
+.r
+p .x abs p .y abs max 1 step *
+} =istext
+fb'filt uv tex =c
+c istext inv *
+c inv istext * +
 draw

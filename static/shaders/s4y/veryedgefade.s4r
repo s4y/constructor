@@ -4,11 +4,11 @@ p .y abs
 p .x abs
 max
 
-# cdist
-# +
-# 3 /
-0.8 1 ss
+cdist
+3 /
++
 
 *
+0.8 1.4 ss
 
 draw

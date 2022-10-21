@@ -1,3 +1,4 @@
+t 0.1 * =t
 
 p .y t 40 * sin + p .x t 10 * + 5 * sin 0.3 * + abs 0.031 0.02 ss
 dup 0.1 mod fsf *

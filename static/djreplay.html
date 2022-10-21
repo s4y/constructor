@@ -120,7 +120,7 @@ const handleEvent = m => {
   const master = m.filter(deck => deck.master)[0];
   if (!master)
     return;
-  console.log(master.beat, master.beat_count, master.pitch);
+  console.log(master, master.beat, master.beat_count, master.pitch);
   if (!master.play) {
     knobs.set('bpm', 0);
     knobs.set('downbeat', null);
@@ -135,7 +135,6 @@ const handleEvent = m => {
   const bpm = master.bpm / master.pitch;
   knobs.set('bpm', bpm);
   knobs.set('downbeat', reserve.now() - master.beat_count / bpm * 60000);
-  console.log(m);
 }
 
 </script>

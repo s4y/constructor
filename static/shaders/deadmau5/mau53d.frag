@@ -20,7 +20,7 @@ float u_eye_decoration = 1.;
 float u_eye_shape = 1.;
 float u_activity_min = 5.;
 float u_activity_max = 1.;
-float u_bob_amount = 1.;
+float u_bob_amount = .1;
 
 const float PI = asin(1.0) * 2.;
 
@@ -482,12 +482,13 @@ void main() {
   float regHead = smoothstep(0.01, 0.0, min(hit.headDist, hit.earDist));
   fragColor += activity * amazHead * vec4(vec3(.3), 1) * clamp(pow(1.-norm.z + 0.1, 1.), 0., 1.);//pow(clamp(dot(norm, normalize(vec3(-2,1,-1.9)))+.9, 0., 1.), 7.);
   fragColor += u_head_glow * activity * regHead * vec4(hsv(.65 + sf(abs(p.x)/2.)*0.5, 1., 1.), 1) * clamp(pow(1.-norm.z + 0.1, 8.), 0., 1.) * pow(clamp(distance(hit.p.xy, vec2(0))+0.5,0.,1.), 10.);
+  fragColor *= smoothstep(kEpsilon, 0., surfDist);
   // fragColor += activity * headness * vec4(vec3(.3), 1) * smoothstep(0.1, 0.5, clamp(pow(1.-norm.z + 0.1, 1.), 0., 1.));//pow(clamp(dot(norm, normalize(vec3(2,1,-1.9)))+.9, 0., 1.), 7.);
   // fragColor = floor(fragColor*3.)/3.;
   //
   // fragColor.rgb = 1.-fragColor.rgb;
 
-  fragColor = mix(bgColor, fragColor, smoothstep(kEpsilon * (32. + 40. * (1.-activity)), 0., surfDist));
+  // fragColor = mix(bgColor, fragColor, smoothstep(kEpsilon * (32. + 40. * (1.-activity)), 0., surfDist));
 
   // fragColor *= step(mod(t, 1.), .5);
 }

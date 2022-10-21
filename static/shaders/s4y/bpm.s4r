@@ -1,5 +1,7 @@
 fitp
 
+p param'beat rotZ transform =p
+
 p .x abs p .y abs + dup 0.2 step =diamond 0.21 - abs 0.01 step
 param'beat 1 mod 0.7 * 0.3 + inv * 0.5 *
 

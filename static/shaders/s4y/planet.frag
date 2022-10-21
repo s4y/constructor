@@ -61,7 +61,7 @@ boxP = (rotation * vec4(boxP, 1.)).xyz;
 // boxP = (rotX(sin(boxP.x*1.+t)) * vec4(boxP, 1.)).xyz;
 float big = 0.5;
 return Hit(
-  min(sdSphere(boxP, big), sdBoundingBox(boxP, vec3(big), big*.5 * sf(boxP.x/2.+0.5))),
+  min(sdSphere(boxP, big), sdBoundingBox(boxP, vec3(big), big*.4 * pow(sf(boxP.y/20.+0.5), 3.))),
   boxP);
 }
 
@@ -136,7 +136,7 @@ return ret;
 
 void main() {
   vec3 p = p3 * vec3(1. * (u_resolution.x/u_resolution.y), 1., 1.) * 1.5;
-  rotation = transpose(rotZ(t*0.1) * rotY(t * 0.06 + pow(sin(t * 0.1), 10.)*10.) * rotX(t * 0.01));
+  rotation = transpose(rotZ(t*0.1) * rotY(t * 0.06 + pow(sin(t * 0.1), 0.)*10.) * rotX(t * 0.01));
   vec4 boxC = marchBox(p, false);
   gl_FragColor = boxC;
 }

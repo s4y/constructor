@@ -1,0 +1,14 @@
+-0.3 =xofs
+0.0 =xshift
+
+p
+1 1.2 1 vec3 *
+.09 rotX
+xofs 0 -4.5 translate *
+PI 2 / 1 0.1 10 perspectiveProj inverse *
+xofs -1 * xshift + 0 0 translate *
+transform =p
+
+fb'filt uv tex
+p .x abs p .y abs max 1 step *
+draw

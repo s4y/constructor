@@ -1,0 +1,13 @@
+0.2 =yofs
+0.5 =yshift
+
+p
+0.3 rotY
+0 yofs -4.1 translate *
+PI 2 / 1 0.1 10 perspectiveProj inverse *
+0 yofs -1 * yshift + 0 translate *
+transform =p
+
+fb'filt uv tex
+p .x abs p .y abs max 1 step *
+draw

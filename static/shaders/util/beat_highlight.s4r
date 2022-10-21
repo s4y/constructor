@@ -1,6 +1,7 @@
 param'beat param'mult * 1 mod dup =thump
 inv 2 pow
 =flash # { fitp cdist } 0.0 2 ss * =flash
+flash { fitp cdist } 0.4 2 ss * =flash
 
 fb'filt uv tex
 dup

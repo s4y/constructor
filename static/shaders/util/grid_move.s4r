@@ -2,6 +2,8 @@ param'go 0.1 * =t
 
 :def sceneDistance { =p
   p inv_camera_mat transform =p
+  p p .z 0.1 * rotZ transform =p
+  p p .x 10 / 0.4 + 1.5 * sf 1.2 + * =p
   p .y abs -1 * .3 +
   }
 
@@ -14,7 +16,7 @@ p inv_proj_mat transform normalize =direction
 :def marchOnce project sceneDistance
 
 2
-:loop 40
+:loop 10
  dup marchOnce +
 =dist
 
@@ -25,8 +27,8 @@ dist project =hitP
 
 hitP 0 0 t vec3 - =hitP
 
-hitP .z 4 * 1 mod bal abs
-hitP .x 4 * 1 mod bal abs min
+hitP .z 8 * 1 mod bal abs
+hitP .x 8 * 1 mod bal abs min
 0.035 0.03 ss
 surfDist 0.01 0 ss *
 dist 7 1 ss *
@@ -36,7 +38,7 @@ bail
 
 # dist 20 5 ss =bri
 surfDist 0.2 mod surfDist 1 hsv bri *
-# 0.8 bri 0.9 * p .y abs sf 0.1 * + - 0.2 0 1 clamp 5 pow 1 hsv
+# 0.8 bri 0.9 * p .y abs fsf 0.1 * + - 0.2 0 1 clamp 5 pow 1 hsv
 bri 0.5 1 ss *
 }
 

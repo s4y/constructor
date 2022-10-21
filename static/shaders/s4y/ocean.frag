@@ -6,8 +6,8 @@ uniform float u_rot_x;
 uniform float u_rot_y;
 uniform float u_rot_z;
 uniform float u_head_glow;
-float u_sea_hue = 0.0;
-float u_sea_hue_amt = -0.0;
+float u_sea_hue = 0.6;
+float u_sea_hue_amt = 0.1;
 uniform float u_mouth_decoration;
 uniform float u_mouth_decoration_style;
 uniform float u_mouth_sea;
@@ -19,6 +19,7 @@ float u_activity_max = 0.3;
 uniform float u_bob_amount;
 
 uniform float sndGo;
+uniform float go;
 
 const int kSteps = 60;
 const float kEpsilon = 1./1024.;
@@ -177,7 +178,7 @@ SeaHit sdSea(vec3 p) {
   float which = p.z - mod(p.z, PI);
   // p.x += cloudNoise((p - mod(p, PI*4.))).x * .4;
 
-  float t = t * 5. + sndGo * .6;
+  float t = t * .4 + sndGo * .1;
   // t = mod(pow(abs(beat / 4.), 2.), 1.);
 
   p *= 2.;
@@ -227,7 +228,7 @@ vec4 marchSea(vec3 p) {
   vec3 norm = estimateSeaNormal(hitP*vec3(1, 1, -0.2));
 
   vec4 color = vec4(0, 0, 0, 1);
-  color += hsv(u_sea_hue + fsf(mod(abs(hitP.x) / 100., 1.)) * u_sea_hue_amt, 1. * (1.-ssf(hitP.z)*0.5), .5 * sf(abs(-mod((abs(hit.p.y))/100., 1.)))) * 0.5 * dot(hitP, normalize(vec3(0, 1, -2)));
+  color += hsv(u_sea_hue + sf(mod(abs(hitP.x) / 100., 1.)) * u_sea_hue_amt, 1. * (1.-ssf(hitP.z)*0.5), .5 * sf(abs(-mod((abs(hit.p.y))/100., 1.)))) * 0.5 * dot(hitP, normalize(vec3(0, 1, -2)));
   // color += vec4(0, 0, 1, 1) * clamp(dot(hitP, normalize(vec3(0, -1, 0))), 0., 1.);
   return color;
 }
@@ -240,7 +241,7 @@ vec4 bg(vec3 p) {
 }
 
 vec4 baseEyeColor(vec3 p) {
-  float c = smoothstep(0.02, 0.021, mix(smoothstep(0.0699, 0.07, distance(p.xy, vec2(0.))), abs(p.y*fsf(abs(p.x)/2.)), u_eye_shape));
+  float c = smoothstep(0.02, 0.021, mix(smoothstep(0.0699, 0.07, distance(p.xy, vec2(0.))), abs(p.y*sf(abs(p.x)/2.)), u_eye_shape));
   return hsv(0., 0., c) * u_eye_decoration;
 }
 
@@ -326,7 +327,7 @@ vec4 marchHead(vec3 p) {
 // out vec4 fragColor;
 #define fragColor gl_FragColor
 void main() {
-  sf02 = fsf(0.2);
+  sf02 = sf(0.2);
   sf03 = sf(0.3);
   ssf01 = ssf(0.1);
   ssf02 = ssf(0.2);

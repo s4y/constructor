@@ -19,7 +19,7 @@ p 1 * 0.1 sf 1 pow 0.01 * inv * =p
  abs
  # t x .x 1 + + 0.05 * sin 2 * 0.5 + + =p
  x .y 1 +
- t 0.000 * x .y 1 * sin cdist * 0.1 * * +
+ t 0.01 * x .y 1 * sin cdist * 0.1 * * +
  } vec2
 
 =ret
@@ -28,8 +28,11 @@ ret .x 0.2 * t 0.01 * + 0 1 hsv ret .x abs *
 
 }
 
-# draw
-# bail
+1 0.85 0.8 1 vec4 *
+0.7 *
+
+draw
+bail
 
 {
 p 1 0.1 sf 5 pow 0.1 * - * =p

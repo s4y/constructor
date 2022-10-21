@@ -1,0 +1,30 @@
+# c PI * 2 * cos
+# c PI * 2 * sin
+# 0.05
+# 0
+# 0
+# vec5 lase
+
+c 2 * 1 - abs inv =cc
+
+t 5 / 1 mod inv 5 pow inv =prog
+c prog 0.5 * 0.5 + step =on
+
+0 # c PI * 9 * cos 0.01 * cc 0.5 pow *
+0 # c PI * 9 * sin 0.01 * cc 0.5 pow *
+0.05 on * 0.03 on * 0.05 on *
+vec5 lase
+
+# cc bal
+# 0
+# 0.05
+# 0
+# 0
+# vec5 lase
+
+# 0
+# cc bal
+# 0.05
+# 0
+# 0
+# vec5 lase

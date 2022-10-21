@@ -1,7 +1,12 @@
+# :def fsf { =x 1 }
+# :def sf { =x 1 }
+# :def ssf { =x 1 }
+
 :fn smoothstep 3
 :def ss { =b =a =x a b x smoothstep }
 
-t 0.1 * param'sndGo 0.1 * + =t
+t 1.1 * param'sndGo 0.1 * + =t
+# t 0.5 * =t
 
 fitp
 
@@ -12,11 +17,11 @@ fitp
  PI 2 * * sin unbal
 =bri
 
-bri 0.1 * bri 5 pow cdist 2 0 ss 1 hsv 0 1 clamp bri 10 pow * 0.1 ssf *
+bri 0.1 * cdist 2 0 ss 0.8 * 1 hsv 0 1 clamp bri 1 pow * # param'lo *
 
-bri *
-
-cdist 0 0.3 ss *
+cdist 1.9 0 ss *
+1 1.0 0.8 1 vec4 *
+# 1.8 *
 
 draw
 bail
@@ -36,7 +41,7 @@ fitp
 {
 # :def tweak dup ssf inv 0.8 * 0.2 + *
 0
-:loop 10 flower dup sin unbal ssf 1 pow +
+:loop 10 flower dup sin unbal sf 1 pow +
 }
 =bri
 

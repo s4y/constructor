@@ -26,14 +26,16 @@ class WSConnection {
 const ws = new WSConnection('ws://127.0.0.1:10505/ws');
 ws.connect();
 
-ws.onmessage = m => {
-  const master = m.filter(deck => deck.master)[0];
-  if (!master)
+ws.onmessage = deck => {
+  if(!deck.master)
     return;
-  const bpm = master.bpm * master.pitch
+  if(!deck.play)
+    return;
+  console.log(deck);
+  const bpm = deck.bpm * deck.pitch
   knobs.set('bpm', bpm);
-  knobs.set('downbeat', reserve.now() - master.beat_count / bpm * 60 * 1000);
-  console.log(master);
+  knobs.set('downbeat', reserve.now() - deck.beat / bpm * 60 * 1000);
+  console.log(deck);
 }
 
 </script>

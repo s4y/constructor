@@ -1,7 +1,7 @@
 const textCanvas = document.createElement('canvas');
 const textCtx = textCanvas.getContext('2d');
 
-const texture = ctx.globalTextures.editorText = (() => {
+const texture = (() => {
   const { gl } = ctx.canvas;
 
   const tex = gl.createTexture();
@@ -20,11 +20,10 @@ const texture = ctx.globalTextures.editorText = (() => {
         return true;
       this.needDraw = false;
       gl.texImage2D(
-        gl.TEXTURE_2D, 0, gl.LUMINANCE,
+        gl.TEXTURE_2D, 0, gl.RGBA,
         this.w, this.h, 0,
-        gl.LUMINANCE, gl.UNSIGNED_BYTE, textCanvas
+        gl.RGBA, gl.UNSIGNED_BYTE, textCanvas
       );
-      console.log('yee');
       return true;
     }
   }
@@ -32,15 +31,14 @@ const texture = ctx.globalTextures.editorText = (() => {
 ctx.uniformsChanged();
 
 const font = 'Helvetica';
-const fontSize = 18;
+const fontSize = 48;
 let lastText = '';
-
-textCtx.font =  `${fontSize}px ${font}`;
 
 return () => { 
   if (!ctx.editorState)
     return; 
- 
+  if (!ctx.editorState.text)
+    return; 
   if (ctx.editorState.text != lastText) {
     lastText = ctx.editorState.text;
     const lines = lastText.split('\n');
@@ -49,15 +47,18 @@ return () => {
       const measurements = textCtx.measureText(lastText);
       width = Math.max(width, Math.ceil(measurements.width));
     }
-    const height = lines.length * fontSize;
-    console.log(width, height);
+    width = Math.min(1024, width);
+    const height = Math.min(1024, lines.length * fontSize * 1.25);
     if (textCanvas.width != width)
       textCanvas.width = width;
     if (textCanvas.height != height)
       textCanvas.height = height;
-    textCtx.fillStyle = 'white';
+    textCtx.clearRect(0, 0, width, height);
+    textCtx.fillStyle = 'red';
+    textCtx.font =  `${fontSize}px ${font}`;
     for (let i = 0; i < lines.length; i++)
-      textCtx.fillText(lines[i], 0, i * fontSize);
+      textCtx.fillText(lines[i], 0, i * (fontSize * 1.25) + fontSize);
     texture.needDraw = true;
+    ctx.globalTextures.editorText = texture;
   } 
 }

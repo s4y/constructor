@@ -7,7 +7,7 @@ p .y unbal sf 0.3 step inv *
 0 1 clamp
 
 {
--.02 0 0 vec3 p + =p
+-.01 0 0 vec3 p + =p
 fb'f uv tex
 yee *
 # p .x -0.99 step inv *

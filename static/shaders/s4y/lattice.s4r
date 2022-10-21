@@ -1,20 +1,20 @@
-t 0.1 * =t
+param'sndGo 0.1 * =t
 
 :def f { dup .x =bri .y =rot
  rot =rot
- p rot 0.1 * - =p
- p rot 0.35 + dup =rot rotZ transform =p
+ p rot 0.05 * - =p
+ p rot 1.35 + dup =rot rotZ transform =p
  p t 0.8 * rotZ transform =p
- p 0.2 + =p
+ p 1.7 + =p
  p .y
- p .x 10 * t + sin unbal 1 / ssf 0.1 * dup =bb +
+ p .x 10 * t + sin unbal 1 / sf 0.1 * dup =bb +
  abs
- 1 dims / .y step 0.1 0.5 bb * + * bri + rot vec2
+ 1 dims / .y dup 0.7 + ss inv 0.0 0.2 bb * + * bri + rot vec2
  }
 
 {
 fitp
-p .x abs p .y p .z vec3 =p
+p .x p .y p .z vec3 =p
 
 0 0 vec2
 :loop 100
@@ -23,7 +23,7 @@ p .x abs p .y p .z vec3 =p
 
 .x =bri
 
-bri t 0.07 * + 1 mod 0.2 * bri ssf 2 pow 1 hsv bri 20 * 0 1 clamp 4 pow *
+bri t 0.07 * + 1 mod 0.2 * bri ssf 2 pow 1 hsv bri 20 * 0 1 clamp 10 pow *
 
 draw
 bail

@@ -14,13 +14,13 @@ load'images/livecode.svg'1024x1024 =logo
 {
 fitp
 p 2 * =p
-0 p .y 50 * t 20 * + sin t 10 / sin 0 1 clamp 500 pow * 0 vec3 p + =p
+# 0 p .y 50 * t 20 * + sin t 10 / sin 0 1 clamp 500 pow * 0 vec3 p + =p
 slogo
 }
 =bri
 fb'last uv tex dup
 inv bri * 0.5 1 1 1 vec4 *
-# swap bri inv * 0.8 * +
+swap bri inv * 0.4 * +
 draw
 bail
 

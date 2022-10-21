@@ -3,7 +3,7 @@ t 0.1 * param'go + 0.1 * =t
 {
 fitp
 p .x abs p .y abs p .z vec3 =p
-p 0 angle ssf 0 vec3 1.1 * + =p
+p 0 angle ssf 0 vec3 1.0 * + =p
 p t 0.1 * rotZ transform =p
 p -0.01 0.5 t 0.01 * sin unbal * 0 vec3 + =p
 

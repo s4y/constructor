@@ -3,9 +3,9 @@ export default class Canvas {
     this.canvasEl = canvasEl;
     this.initFn = initFn;
     const glOpts = {
-      alpha: false,
-      antialias: true,
-      desynchronized: true,
+      // alpha: false,
+      // antialias: false,
+      // desynchronized: true,
       ...opts,
     };
     this.gl = canvasEl.getContext('webgl2', glOpts);
@@ -14,6 +14,9 @@ export default class Canvas {
       this.webglVersion = '2';
     else
       this.gl = canvasEl.getContext('webgl', glOpts);
+
+    this.s3tc = this.gl.getExtension('WEBGL_compressed_texture_s3tc');
+
     this.props = {};
     this.programs = [];
     this.reinit();

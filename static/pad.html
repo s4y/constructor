@@ -99,11 +99,27 @@ for (let i = 0; i < 4 * 4; i++) {
       console.log(id, down);
       sendState();
   };
-  button.addEventListener('mousedown', set(true));
-  button.addEventListener('mouseup', set(false));
+  // button.addEventListener('mousedown', set(true));
+  // button.addEventListener('mouseup', set(false));
 
   let initialTouch;
   let initialValue;
+  button.addEventListener('mousedown', e => {
+    e.preventDefault();
+    initialValue = state[id] || 0;
+    const rect = button.getBoundingClientRect();
+    const handler = eMove => {
+      const val = Math.min(1, Math.max(0, (e.clientY - eMove.clientY)/rect.height+initialValue));
+      button.style.setProperty('--amt', `${val * 100}%`);
+      state[`knob${i}`] = val;
+      sendState();
+    };
+    window.addEventListener('mousemove', handler);
+    window.addEventListener('mouseup', e => {
+      window.removeEventListener('mousemove', handler);
+    }, { once: true });
+  });
+
   button.addEventListener('touchstart', e => {
     e.preventDefault();
     if (e.targetTouches.length > 1) {
@@ -117,7 +133,7 @@ for (let i = 0; i < 4 * 4; i++) {
     const rect = button.getBoundingClientRect();
     const listener = e => {
         console.log(e.targetTouches[0].clientY - initialTouch.clientY);
-        const val = Math.max(0, Math.min(1, 1 - ((e.targetTouches[0].clientY - initialTouch.clientY) / rect.height - initialValue)));
+        const val = Math.max(0, Math.min(1, 1 - ((e.targetTouches[0].clientY - initialTouch.clientY + rect.height) / rect.height - initialValue)));
         console.log(id, val);
         button.style.setProperty('--amt', `${val * 100}%`);
         state[`knob${i}`] = val;

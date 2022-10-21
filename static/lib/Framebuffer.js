@@ -31,11 +31,23 @@ export default class Framebuffer {
     this.tex = tex;
     this.depthTex = depthTex;
 
-    // this.alloc();
+    this.dims = null;
+    this.alloc();
+  }
+  get viewport() {
+    if (this._dims)
+      return [0, 0, ...this._dims];
+    else
+      return [0, 0, this.ctx.viewport[2], this.ctx.viewport[3]];
+  }
+  get dims() {
+    return this.viewport.slice(2);
+  }
+  set dims(dims) {
+    this._dims = dims;
   }
   alloc() {
     const { gl } = this.ctx.canvas;
-    this.viewport = [0, 0, this.ctx.viewport[2], this.ctx.viewport[3]];
     gl.bindTexture(gl.TEXTURE_2D, this.tex);
     gl.texImage2D(
       gl.TEXTURE_2D, 0, gl.RGBA,
@@ -57,13 +69,15 @@ export default class Framebuffer {
   drawInto(f) {
     const { gl } = this.ctx.canvas;
     const lastFb = Framebuffer.stack[0];
-    const oldViewport = this.ctx.viewport;
     Framebuffer.stack.unshift(this);
-    if (!this.viewport || this.viewport[2] != oldViewport[2] || this.viewport[3] != oldViewport[3]) {
+    const viewport = this.viewport;
+    if (!this.lastViewport || viewport[2] != this.lastViewport[2] || viewport[3] != this.lastViewport[3]) {
       // Note: other textures are getting stomped here and I don't
       // know why. See the console during a window resize.
+      console.log('realloc');
       this.alloc();
     }
+    this.lastViewport = viewport;
     this.activate(this);
     ctx.withViewport(this.viewport, () => {
       gl.clearColor(0, 0, 0, 0);

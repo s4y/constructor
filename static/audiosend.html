@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<script type=module>
+
+class WSConnection {
+  constructor(url) {
+    this.url = url;
+  }
+
+  connect() {
+    if (this.ws)
+      this.ws.close();
+    this.ws = new WebSocket(this.url);
+    this.ws.binaryType = "arraybuffer";
+    this.ws.onclose = e => {
+      this.open = false;
+      setTimeout(() => this.connect(), 1000);
+    };
+    this.ws.onopen = e => {
+      this.open = true;
+    };
+    this.onmessage && (this.ws.onmessage = async e => {
+      this.onmessage(typeof e.data == 'string' ? JSON.parse(e.data) : await e.data);
+    });
+  }
+  send(...args) {
+    if (this.open)
+      this.ws.send(...args);
+  }
+}
+
+const ac = new AudioContext();
+const conn = new WSConnection('ws://127.0.0.1:10608');
+conn.connect();
+
+(async () => {
+  const stream = await navigator.mediaDevices.getUserMedia({
+    audio: { 
+      noiseSuppression: false,
+      echoCancellation: false,
+    }
+  });
+
+  const buf = new Uint8Array(128);
+  const analyser = ac.createAnalyser();
+  analyser.fftSize = 1024;
+  analyser.smoothingTimeConstant = 0.1;
+
+  ac.createMediaStreamSource(stream).connect(analyser);
+
+  setInterval(() => {
+    analyser.getByteFrequencyData(buf);
+    conn.send(buf);
+  }, 1000 / 100);
+})();
+
+window.addEventListener('sourcechange', e => {
+if (e.detail.indexOf('audiosend') == -1)
+  e.preventDefault();
+});
+
+</script>

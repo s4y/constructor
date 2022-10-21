@@ -1,0 +1,22 @@
+fb'filt uv tex =color
+
+1 =thump
+
+{ cdist 0.5 0.8 ss 4 pow -0.01 * thump * 1 + p *
+# 10 dims / .x 0 0 vec3 + =p
+fb'filt uv tex .r } 
+{ cdist 0.5 0.8 ss 4 pow -0.02 * thump * 1 + p * =p fb'filt uv tex .g } 
+{ cdist 0.5 0.8 ss 4 pow -0.03 * thump * 1 + p * =p fb'filt uv tex .b } 
+1
+vec4
+
+# p .x 0 step *
+
+{
+fitp
+cdist thump * 0 1 clamp =yee
+yee *
+color yee inv * +
+# color .r 0.5 step inv *
+}
+draw

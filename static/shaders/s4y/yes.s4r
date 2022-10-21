@@ -1,0 +1,13 @@
+vert
+0.5 0 -0.0 1 vec4 +
+1 2 / vec3.1 1 vec4.2 *
+param'sndGo dup 0.5 mod - PI * vert .z 2 / 1 - fsf 0.2 * + rotX *
+param'sndGo dup 0.7 mod - sin 0.01 * rotY *
+camera_mat *
+proj_mat *
+=vert
+
+loadGltf'yes =mesh
+
+0 0 p .x 200 / 0.5 + abs fsf 0.8 step hsv
+draw

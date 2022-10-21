@@ -1,0 +1,96 @@
+19 =rule
+
+{
+
+:def shiftp { =xy
+ p .xy unbal
+ dims *
+ xy +
+ dims / bal
+ 0 vec3.2 } =p
+
+:def neighbor { shiftp
+ fb'f uv tex }
+
+0 -10 vec2 shiftp
+
+-20 0 vec2 neighbor .r =l
+0 0 vec2 neighbor dup .b =rule .r =c
+20 0 vec2 neighbor .r =r
+
+l 2 * c 2 * r + + floor =num
+
+p .y -1 step =which
+p .x abs fsf dup 0.95 step inv swap 0 1 vec4 which *
+rule 4 * floor 19 + 2 num pow / 2 mod 1 step inv vec4.1 which inv * +
+
+
+
+
+
+drawto'f
+}
+
+{
+# p 0 4 dims .y / 0.80 + 4 * 0 vec3 - =p
+# p 1 4 1 vec3 / =p
+
+fb'f uv tex draw
+}
+bail
+
+{
+fitp
+angle 3 / PI / cdist 3 / 1 invpow -1.0 + 0 vec3 =p
+fb'f uv tex .r =val
+
+val 0.25 1 hsv val 0.5 step inv * draw
+}
+
+
+bail
+
+
+
+
+:fn floor 1
+:def sf { =_ 0 }
+
+19 =rule
+
+{
+
+:def shiftp { =xy
+ p .xy unbal
+ dims *
+ xy +
+ dims / bal
+ 0 vec3.2 } =p
+
+:def neighbor { shiftp
+ fb'f uv tex }
+
+0 -1 vec2 shiftp
+
+-1 0 vec2 neighbor .r =l
+0 0 vec2 neighbor dup .g =lr .r =c
+1 0 vec2 neighbor .r =r
+
+l 4 * c 2 * r + + floor =num
+
+p .y -1 step =which
+t 1 mod p .x dims .x * 200 mod 2 step t 20 / 1 mod 0 1 vec4 which *
+lr 255 * floor 2 num pow / 2 mod 1 step inv lr 0 1 vec4 which inv * +
+
+
+
+
+drawto'f
+}
+fb'f uv tex
+
+draw
+bail
+
+.r 0 0 1 hsv *
+draw
