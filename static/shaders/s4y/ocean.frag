@@ -6,8 +6,8 @@ uniform float u_rot_x;
 uniform float u_rot_y;
 uniform float u_rot_z;
 uniform float u_head_glow;
-float u_sea_hue = 0.6;
-float u_sea_hue_amt = 0.1;
+float u_sea_hue = 0.65;
+float u_sea_hue_amt = 0.2;
 uniform float u_mouth_decoration;
 uniform float u_mouth_decoration_style;
 uniform float u_mouth_sea;
@@ -178,7 +178,12 @@ SeaHit sdSea(vec3 p) {
   float which = p.z - mod(p.z, PI);
   // p.x += cloudNoise((p - mod(p, PI*4.))).x * .4;
 
-  float t = t * .4 + sndGo * .1;
+  p = applyTransform(
+      rotZ(p.z * 0.04 * sin(beat * PI / 16.))
+      * rotY(p.z * 0.1)
+      , p);
+
+  float t = t * .0 + sndGo * 10.;
   // t = mod(pow(abs(beat / 4.), 2.), 1.);
 
   p *= 2.;
@@ -228,7 +233,7 @@ vec4 marchSea(vec3 p) {
   vec3 norm = estimateSeaNormal(hitP*vec3(1, 1, -0.2));
 
   vec4 color = vec4(0, 0, 0, 1);
-  color += hsv(u_sea_hue + sf(mod(abs(hitP.x) / 100., 1.)) * u_sea_hue_amt, 1. * (1.-ssf(hitP.z)*0.5), .5 * sf(abs(-mod((abs(hit.p.y))/100., 1.)))) * 0.5 * dot(hitP, normalize(vec3(0, 1, -2)));
+  color += hsv(u_sea_hue + sf(mod(abs(hitP.x) / 100., 1.)) * u_sea_hue_amt, .8 * (1.-ssf(hitP.z)*0.5), .5 * sf(abs(-mod((abs(hit.p.y))/100., 1.)))) * 0.5 * dot(hitP, normalize(vec3(0, 1, -2)));
   // color += vec4(0, 0, 1, 1) * clamp(dot(hitP, normalize(vec3(0, -1, 0))), 0., 1.);
   return color;
 }

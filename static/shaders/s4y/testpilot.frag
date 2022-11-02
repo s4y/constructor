@@ -1,8 +1,9 @@
 #include "/shaders/s4y/common.glsl"
 
+uniform float sndGo;
 uniform sampler2D u_fb;
 uniform sampler2D webcam;
-#loadimage logo no_crypto.png
+#loadimage logo tender_alchemy.png
 
 struct Hit {
   float dist;
@@ -17,7 +18,7 @@ Hit sdMany(vec3 p) {
   p.x += 1.;
   vec3 op = p;
   if (p.z < -1.) {
-    vec3 md = vec3(2., 1., 1.);
+    vec3 md = vec3(3., 1., 1.);
     p.xyz = mod(p.xyz + md/2., md) - md/2.;
   }
   p = transform(rotZ(op.z-p.z), p);
@@ -25,21 +26,22 @@ Hit sdMany(vec3 p) {
   p.y *= 1. - sf(p.x/10./2.+.5);
   Hit hit = Hit(sdBox(p, vec3(0.5,0.5,0.05)), p*2., 0.);
   vec4 color = texture(logo, p.xy*2./2.+.5);
-  if (color.r < .5)
+  if (color.b > .5)
     hit.dist = max(hit.dist, 0.02);
   // hit.dist/=2.;
   return hit;
 }
 
 Hit sdOne(vec3 p) {
+  // float t = sndGo;
   p.z += 2.;
-  p = transform(rotX(sin(t*0.45)*0.4) * rotY(t*0.5), p);
+  p = transform(rotX(sin(t*0.45)*0.1) * rotY(pow(sin(t*0.001), 10.) * sin(t * 1.1) * 0.5), p);
   p.y *= 1. - sf(p.x/10./2.+.5);
   Hit hit = Hit(sdBox(p, vec3(0.5,0.1,0.05)), p*2., 1.);
-  vec4 color = texture(logo, p.xy*vec2(3.,9.)/2.+.5);
+  vec4 color = texture(logo, p.xy*vec2(2.,12.)/2.+.5);
   if (color.r > .5)
     hit.dist = max(hit.dist, 0.1);
-  hit.dist/=4.;
+  hit.dist/=16.;
   return hit;
 }
 
@@ -75,7 +77,7 @@ void main() {
     if (abs(lastHit.dist) < 1./512.)
       break;
   }
-  vec4 c = hsv(0.,lastHit.which,1.);//1.-pow(sf(lastHit.p.x/10./2.+.5)+0.3, 2.));
+  vec4 c = hsv(0.7,lastHit.which * 0.0,1.);//1.-pow(sf(lastHit.p.x/10./2.+.5)+0.3, 2.));
   gl_FragColor = c;
   gl_FragColor *= smoothstep(1./256., 0., lastHit.dist);
   gl_FragColor *= smoothstep(20., 0., dist);

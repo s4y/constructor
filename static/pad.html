@@ -104,21 +104,21 @@ for (let i = 0; i < 4 * 4; i++) {
 
   let initialTouch;
   let initialValue;
-  button.addEventListener('mousedown', e => {
-    e.preventDefault();
-    initialValue = state[id] || 0;
-    const rect = button.getBoundingClientRect();
-    const handler = eMove => {
-      const val = Math.min(1, Math.max(0, (e.clientY - eMove.clientY)/rect.height+initialValue));
-      button.style.setProperty('--amt', `${val * 100}%`);
-      state[`knob${i}`] = val;
-      sendState();
-    };
-    window.addEventListener('mousemove', handler);
-    window.addEventListener('mouseup', e => {
-      window.removeEventListener('mousemove', handler);
-    }, { once: true });
-  });
+  // button.addEventListener('mousedown', e => {
+  //   e.preventDefault();
+  //   initialValue = state[id] || 0;
+  //   const rect = button.getBoundingClientRect();
+  //   const handler = eMove => {
+  //     const val = Math.min(1, Math.max(0, (e.clientY - eMove.clientY)/rect.height+initialValue));
+  //     button.style.setProperty('--amt', `${val * 100}%`);
+  //     state[`knob${i}`] = val;
+  //     sendState();
+  //   };
+  //   window.addEventListener('mousemove', handler);
+  //   window.addEventListener('mouseup', e => {
+  //     window.removeEventListener('mousemove', handler);
+  //   }, { once: true });
+  // });
 
   button.addEventListener('touchstart', e => {
     e.preventDefault();

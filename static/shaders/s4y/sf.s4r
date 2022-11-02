@@ -1,5 +1,6 @@
-p .x 2 / abs fsf
-p .y 2 * abs step inv
+p .x 1 / unbal fsf 6 pow
+p .y 3 * abs step inv
+# p .y unbal 4 * step inv
 vec4.1
 draw
 bail

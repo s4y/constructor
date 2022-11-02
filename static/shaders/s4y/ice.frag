@@ -42,9 +42,9 @@ Hit sd(vec3 p) {
   // p = transform(rotY(t * 0.1) * rotX(t * 0.2), p);
   // p = transform(rotY(sf(0.4) * 1. + t * 1.), p);
 
-  // p = transform(rotY(0.5) * rotX(0.5), p);
+  p = transform(rotY(0.5 * p.x * 10.) * rotX(0.5), p);
 
-  p.xz *= 1. - pow(ssf(mod(p.y/10.+.5, 1.)), 2.) * 1.0;
+  p.xz *= 1. - pow(sf(mod(p.y/10.+.5, 1.)), 2.) * 1.0;
   // p.z += 1.;
 
   float bump = pow(clamp(sf(0.05) + 0.2, 0., 2.), 1.);
@@ -60,14 +60,16 @@ Hit sd(vec3 p) {
 
   float whichSliceY = (p.y) / 1.05;
   whichSliceY -= balmod(whichSliceY, .12 * 2. / 3.);
-  p = transform(rotY(pow(mod(t * 0.1 * whichSliceY, 1.), 10.) * PI / 2.), p);
+  p = transform(rotY(pow(mod(t * 1.1 * whichSliceY, 1.), 10.) * PI / 2.), p);
 
+  // p = 
 
 	// p.y *= 1. + sf(abs(p.x / 10.));
 
   // p *= 1. - 0.7 * pow(distance(p, vec3(0.)), .5);
 
-  float dist = mix(sdBox(p, vec3(0.10)), sdSphere(p, 0.14), 0.0);
+  float dist = mix(sdBox(p, vec3(0.10)), sdSphere(p, 0.14), 1.0);
+  // float dist = sdSphere(p, 0.2);
   // float dist = sdBox(p, vec3(0.12));
   return Hit(dist/5., p);
 }
@@ -95,7 +97,7 @@ vec4 bgSky(vec3 p) {
   p.x += t * .1;
   p.y += t * .01;
   bri *= cos(transform(rotZ(2.2*sin(p.x)), p).x*1.);
-  bri *= cos(transform(rotZ(.22*sin(p.y)), p).x*1.);
+  bri *=cos(transform(rotZ(.22*sin(p.y)), p).x*1.);
   // bri *= cos(transform(rotZ(2.*sin(distance(p, vec3(0.)))), p).y*2.);
   // bri *= sin(transform(rotZ(4.*distance(p + 10., vec3(0.))), p).y*10.);
   bri = bri / 2. + 0.5;

@@ -12,17 +12,20 @@
 :def neighbor { shiftp
  fb'f uv tex }
 
-0 -10 vec2 shiftp
+# p =p
 
--20 0 vec2 neighbor .r =l
+0 -1 vec2 shiftp
+
+-1 0 vec2 neighbor .r =l
 0 0 vec2 neighbor dup .b =rule .r =c
-20 0 vec2 neighbor .r =r
+1 0 vec2 neighbor .r =r
 
 l 2 * c 2 * r + + floor =num
 
 p .y -1 step =which
-p .x abs fsf dup 0.95 step inv swap 0 1 vec4 which *
-rule 4 * floor 19 + 2 num pow / 2 mod 1 step inv vec4.1 which inv * +
+# p .x abs fsf dup 0.9 step inv swap 0 1 vec4 which *
+p .x unbal 100 dims .x / mod 5 dims .x / step
+rule 4 * floor 27 + 2 num pow / 2 mod 1 step inv vec4.1 which inv * +
 
 
 
@@ -33,7 +36,7 @@ drawto'f
 
 {
 # p 0 4 dims .y / 0.80 + 4 * 0 vec3 - =p
-# p 1 4 1 vec3 / =p
+# p 16 16 8 vec3 / =p
 
 fb'f uv tex draw
 }

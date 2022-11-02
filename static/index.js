@@ -72,7 +72,7 @@ const createStatsTracker = () => {
       const middle = (sortedFps.length + 1) / 2;
       const median = sortedFps[Math.floor(middle)];
       if (median < 58) {
-        // this.onPerformanceNeeded();
+        this.onPerformanceNeeded();
         this.fpsHistory.length = 0;
       }
       if (median > 30 && this.fpsHistory.length > 19) {
@@ -520,6 +520,25 @@ if ('program' in qs) {
     frame.style.border = 'none';
     document.body.insertBefore(frame, document.body.firstChild);
   }
+} else if (false) {
+  const frame = document.createElement('iframe');
+  frame.src = `/dmx/?preview`;
+  frame.style.display = 'block';
+  frame.style.height = 'calc(100vw*7/120 + 4px)';
+  frame.style.width = '100vw';
+  frame.style.border = 'none';
+  document.body.insertBefore(frame, document.body.firstChild);
+}
+
+if ('dmx' in qs) {
+  const frame = document.createElement('iframe');
+  frame.src = `/dmx/`;
+  frame.style.display = 'none';
+  document.body.appendChild(frame);
+    // frame.style.display = 'block';
+    // frame.style.height = 'calc(100vw*7/120 + 4px)';
+    // frame.style.width = '100vw';
+    // frame.style.border = 'none';
 }
 
 // if ('program' in qs) {
@@ -882,6 +901,8 @@ if ('audiosend' in qs) {
 
 window.addEventListener('sourcechange', e => {
   if (e.detail.indexOf('/ledsign/') != -1)
+    e.preventDefault();
+  if (e.detail.indexOf('/dmx/') != -1)
     e.preventDefault();
 });
 

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<style>
+
+body {
+  background: black;
+  margin: 0;
+}
+
+#preview {
+  width: 100vw;
+  height: 100vh;
+  image-rendering: pixelated;
+  border: 2px solid #888;
+  box-sizing: border-box;
+  display: block;
+}
+</style>
+<canvas width=8 height=16 id=preview></canvas>
+<script type=module>
+
+import Knobs from '/lib/Knobs.js'
+
+const camv = document.createElement('video');
+const camcanv = document.createElement('canvas');
+const camctx = camcanv.getContext('2d');
+let camid = camctx.getImageData(0, 0, 16, 16);
+camcanv.width = 16;
+camcanv.height = 16;
+camv.width = 640;
+camv.height = 480;
+
+navigator.mediaDevices.getUserMedia({ video: true }).then(async stream => {
+  camv.srcObject = stream;
+  camv.muted = true;
+  await camv.load();
+  await camv.play();
+
+  const vfcb = () => {
+    camv.requestVideoFrameCallback(vfcb);
+    camctx.drawImage(camv, 0, 0, 16, 16);
+    camid = camctx.getImageData(0, 0, 16, 16);
+  };
+
+  vfcb();
+});
+
+const qs = location.search
+  .substr(1)
+  .split('&')
+  .filter(v => v)
+  .map(c => c.split('=').map(decodeURIComponent))
+  .reduce((params, [k, v]) => (params[k] = v, params), {});
+
+class WSConnection {
+  constructor(url) {
+    this.url = url;
+  }
+
+  connect() {
+    if (this.ws)
+      this.ws.close();
+    this.ws = new WebSocket(this.url);
+    this.ws.binaryType = "arraybuffer";
+    this.ws.onclose = e => {
+      this.open = false;
+      setTimeout(() => this.connect(), 1000);
+    };
+    this.ws.onopen = e => {
+      this.open = true;
+    };
+    this.onmessage && (this.ws.onmessage = async e => {
+      this.onmessage(typeof e.data == 'string' ? JSON.parse(e.data) : await e.data);
+    });
+  }
+  send(...args) {
+    this.ws.send(...args);
+  }
+}
+
+class Art {
+  constructor(path, args, autoTake) {
+    this.url = new URL(path, location);
+    this.autoTake = autoTake || false;
+    this.pendingFn = null;
+    this.takeSpeed = 1;
+    this.args = args;
+    this.fn = () => ([0, 0, 0]);
+    this.load();
+
+    window.addEventListener('sourcechange', e => {
+      if (e.detail != this.url.href)
+        return;
+      e.preventDefault();
+      if (e.detail.indexOf('art.js') != -1)
+        this.load();
+    });
+  }
+  take() {
+    const fn = this.pendingFn;
+    if (!fn)
+      return;
+    this.pendingFn = null;
+    if (this.fn) {
+      const oldFn = this.fn;
+      const startTime = reserve.now();
+      this.fn = (...args) => {
+        const p = (reserve.now() - startTime) / (this.takeSpeed * 1000);
+        if (p > 1) {
+          if (this.fn == oldFn)
+            this.fn = fn;
+          return fn(...args);
+        }
+        const o = oldFn(...args);
+        const n = fn(...args);
+        return o.map((x, i) => x * (1-p) + n[i] * p);
+      };
+    } else {
+      this.fn = fn;
+    }
+  }
+  async load() {
+    const text = await (await fetch(this.url)).text();
+    this.pendingFn = new Function(...this.args, text);
+    if (this.autoTake)
+      this.take();
+  }
+}
+
+const ctx = {
+  knobs: new Knobs(),
+  get downbeat() {
+    const officialDownbeat = this.knobs.knobs.downbeat;
+    return officialDownbeat;
+    if (!this._currentDownbeat)
+       this._currentDownbeat = officialDownbeat;
+    const diff = officialDownbeat - this._currentDownbeat;
+    if (Math.abs(diff) > 1000)
+      this._currentDownbeat = officialDownbeat;
+    else
+      this._currentDownbeat += diff * 0.1;
+    this._currentDownbeat = officialDownbeat;
+    return this._currentDownbeat;
+  },
+  get bpm() { return this.knobs.knobs.bpm; },
+  get beat() {
+    const { bpm, downbeat } = this;
+    return (bpm && downbeat) ? (((this.clock.now() - downbeat) / 1000) * (bpm / 60)) : 0;
+  },
+  // get beatAmt() { return Math.pow(1-(this.beat%1), 2); },
+  get beatAmt() { return this.beat%1; },
+  clock: {
+    now() {
+      return reserve.now() + this.fixedOffset;
+    },
+    fixedOffset: 0,
+  },
+};
+
+
+const params = {
+  id: null,
+  first: false,
+  state: {},
+  get camid() { return camid; },
+  t: 0,
+  x: 0,
+  y: 0,
+  w: 8,
+  h: 16,
+  preview: 'preview' in qs,
+  get xx() { return (this.x / this.w) * 2 - 1; },
+  get yy() { return (this.y / this.h) * 2 - 1; },
+  get ctx() { return ctx; },
+  get beat() { return this.ctx.beat; },
+  get beatAmt() { return this.ctx.beatAmt; },
+  ssf(x) { 
+    const buf = slowByteFreqData;
+    return buf[Math.floor(x*buf.length)]/255;
+  },
+  fsf(x) { 
+    const buf = byteFreqData;
+    return buf[Math.floor(x*buf.length)]/255;
+  },
+  sf(x) { 
+    const buf = byteFreqData;
+    return buf[Math.floor(x*buf.length)]/255;
+  },
+  st() { 
+  },
+};
+
+const art = new Art('art.js', Object.keys(params), 'preview' in qs);
+
+const byteFreqData = new Uint8Array(128);
+const slowByteFreqData = new Uint8Array(128);
+const byteTimeData = new Uint8Array(1024);
+window.byteTimeData = byteTimeData;
+const mul = 8;
+const maxPos = byteTimeData.length - (120*mul);
+
+const previewCtx = preview.getContext('2d');
+const id = new ImageData(8, 16);
+
+for (let i = 0; i < id.data.length; i += 4)
+  id.data[i+3] = 255;
+
+const drawPreview = buf => {
+  previewCtx.putImageData(id, 0, 0);
+};
+
+import DMX from '/lib/DMX.js';
+
+const dmx = new DMX();
+
+if (!('preview' in qs))
+  dmx.connect();
+
+class TubeFixture {
+  constructor(dmx, ch, flip) {
+    this.dmx = dmx;
+    this.ch = ch;
+    this.flip = flip;
+    this.wideBuf = new Uint16Array(16 * 3);
+  }
+  setPixel(pixel, ...color) {
+    const base = (this.flip ? (16 - pixel) : pixel) * 3;
+    for (let i = 0; i < 3; i++) {
+      this.dmx.state[base + this.ch + i] = color[i] * 255;
+    }
+  }
+}
+
+const fixtures = [];
+for (let i = 0; i < 16; i++)
+  fixtures.push(new TubeFixture(dmx, i*3*16-3, true));
+
+const drawSign = (buf, iid) => {
+  let ofs = maxPos;
+  let above = byteTimeData[0] >= 127;
+  while (ofs && byteTimeData[ofs] >= 127)
+    ofs--;
+  while (ofs && byteTimeData[ofs] < 127)
+    ofs--;
+
+  const lparams = Object.create(params);
+  for (const k in lparams) {
+    if (typeof lparams[k] == 'function')
+      lparams[k] = lparams[k].bind(lparams);
+  }
+
+  lparams.t = reserve.now() / 1000;
+  lparams.id = iid;
+  const { w, h } = params;
+  Object.defineProperty(lparams, 'beat', { value: lparams.beat });
+  Object.defineProperty(lparams, 'beatAmt', { value: lparams.beatAmt });
+  Object.defineProperty(lparams, 'xx', { writable: true, value: 0 });
+  Object.defineProperty(lparams, 'yy', { writable: true, value: 0 });
+  const keys = Object.keys(params);
+  const args = keys.map(k => lparams[k]);
+  const xIdx = keys.indexOf('x');
+  const xxIdx = keys.indexOf('xx');
+  const yIdx = keys.indexOf('y');
+  const yyIdx = keys.indexOf('yy');
+  const camidIdx = keys.indexOf('camid');
+  for (let j = 0; j < 16; j++) {
+    params.y = j;
+    args[yIdx] = params.y;
+    args[yyIdx] = params.yy;
+    args[camidIdx] = params.camid;
+    for (let i = 0; i < 8; i++) {
+      params.x = i;
+      args[xIdx] = params.x;
+      args[xxIdx] = params.xx;
+      // params.first = i == 0 && j == 0;
+      // for (let i = 0; i < keys.length; i++)
+      //   args[i] = lparams[keys[i]];
+      const c = art.fn(...args);
+
+      fixtures[i].setPixel(j, ...c);
+      id.data[i * 4 + j * 4 * 8 + 0] = c[0] * 255;
+      id.data[i * 4 + j * 4 * 8 + 1] = c[1] * 255;
+      id.data[i * 4 + j * 4 * 8 + 2] = c[2] * 255;
+      id.data[i * 4 + j * 4 * 8 + 3] = 255;
+    }
+  }
+  return buf;
+  // if (ws.open)
+  //   ws.send(buf);
+};
+
+const buf = new Uint8Array(7 * 15);
+const signId = +qs.id || 0;
+
+setInterval(() => {
+  buf.fill(0);
+  // return drawSign(buf, signId);
+  drawSign(buf, signId);
+  if ('preview' in qs)
+    drawPreview();
+  else
+    dmx.send();
+  // if (ws1.open)
+  //   ws1.send(drawSign(1));
+  for (let i = 0; i < byteFreqData.length; i++)
+    byteFreqData[i] *= 0.99;
+  for (let i = 0; i < slowByteFreqData.length; i++)
+    slowByteFreqData[i] *= 254/255;
+}, 1000 / 100);
+
+const sndConn = new WSConnection('ws://127.0.0.1:10607');
+sndConn.onmessage = msg => {
+  byteFreqData.set(new Uint8Array(msg));
+  for (let i = 0; i < byteFreqData.length; i++)
+    slowByteFreqData[i] = Math.max(slowByteFreqData[i], byteFreqData[i]);
+};
+sndConn.connect();
+
+
+window.addEventListener('sourcechange', e => {
+  if (e.detail.indexOf('/dmx/') == -1)
+    e.preventDefault();
+});
+
+window.addEventListener('broadcast', e => {
+  if (e.detail.type != 'event')
+    return;
+  const { name, args } = e.detail.value;
+  if (name != 'take')
+    return;
+  if (args[0] != null)
+    art.takeSpeed = args[0];
+  art.take();
+  console.log(art.takeSpeed);
+});
+
+// let which = 0;
+// setInterval(() => {
+//   which++;
+//   for (let j = 0; j < fixtures.length; j++) {
+//     const fixture = fixtures[j];
+//     for (let i = 0; i < 16; i++)
+//       fixture.setPixel(i, Math.pow(Math.sin(j * Math.PI / 16 * 2 - reserve.now() * 0.005) / 2 + 0.5, 10) * Math.pow((Math.sin(i * 0.1 * Math.PI - reserve.now() * 0.007))/2+0.5, 2), 0, 0);
+//   }
+//   dmx.send();
+// }, 20);
+
+</script>

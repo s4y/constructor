@@ -1,4 +1,4 @@
 fb'last uv tex
 fitp
-cdist 0.95 step *
+cdist 0.95 1 ss *
 draw

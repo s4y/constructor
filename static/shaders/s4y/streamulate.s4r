@@ -12,7 +12,7 @@ unfitp
 {
 
 # p 1 0.1 param'lo 4 pow * 0.1 * - * =p
-p 1 0.1 param'thump 16 pow * 2.0 * - * =p
+p 1 0.1 param'lo 16 pow * 1.0 * - * =p
 
 # p 1 - 0.01 param'lo * + * =p
 # p 1.001 0.1 sf 4 pow 0.1 * - vec3.1 * =p

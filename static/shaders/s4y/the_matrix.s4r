@@ -4,7 +4,8 @@ param'sndGo 0.1 * =t
 :def sceneDistance { =p
   p camera_mat transform =p
   p t 0.1 * rotX 0.8 rotY * transform =p
-  p 1 8 / balmod =p
+  p 0 p .x 10 * p .y sf 1.5 * vec3 + =p
+  p 1 2 / balmod =p
   p length 2.3 * 0.9 +
   }
 
@@ -24,7 +25,7 @@ dist direction * p inv_proj_mat transform + dup =hitP
 hitP marchOnce =surfDist
 
 dist sin
-dup t 0.1 * + 0.7 * 1 1 hsv *
+dup t 0.0 direction .x 0 * 1 mod sf 0.0 * + * + 0.1 * 1 1 hsv *
 vec4.1
 draw
 bail
@@ -40,7 +41,7 @@ draw
 bail
 
 dist 30 / inv =bri
-0.8 bri 0.9 * p .y abs sf 0.0 * + - 0.2 0 1 clamp 10 pow 1 hsv
+0.8 bri 0.9 * p .y abs sf 0.5 * + - 0.2 0 1 clamp 10 pow 1 hsv
 bri 0.5 1 ss *
 }
 

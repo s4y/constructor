@@ -5,14 +5,14 @@
 :fn smoothstep 3
 :def ss { =b =a =x a b x smoothstep }
 
-t 1.1 * param'sndGo 0.1 * + =t
+t 0.4 * param'sndGo 0.1 * + =t
 # t 0.5 * =t
 
 fitp
 
 0
-:loop 10 angle t 0.1 * cdist t 0.2 * + sin 0.2 ssf 0.5 * * + -
- + 5 * sin dup 6 swap ssf 4 pow 1 * - /
+:loop 10 angle t 0.1 * cdist t 0.2 * + sin 0.2 ssf 0.0 * * + -
+ + 5 * sin dup 6 swap ssf 4 pow 0 * - /
  cdist 1.5 * inv + t 0.1 * + PI * sin unbal
  PI 2 * * sin unbal
 =bri
