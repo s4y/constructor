@@ -1,14 +1,14 @@
 fb'filt uv tex
 drawto'f'480x360
-640 480 1 vec3 2 /  =mul
+640 480 1 vec3 1 /  =mul
 
 :def sceneDistance { =p p
   0 0 0.5 vec3 + =p p
   1 4 3 / 1 vec3 * 
   0 0 0.1 vec3 + =p p
-  0.1 t 0.05 * sin * rotY =p p
+  # 0.1 t 0.05 * sin * rotY =p p
   # t 0.5 * rotZ *
-  transform =p p
+  # transform =p p
   0 0 p .xy 0 0 vec2 distance 0.1 * cos 0.8 - vec3 + =p p
   1 1 0.01 vec3
   sdBox 2 / p vec4.2

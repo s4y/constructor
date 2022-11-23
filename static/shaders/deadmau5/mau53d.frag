@@ -20,7 +20,7 @@ float u_eye_decoration = 1.;
 float u_eye_shape = 1.;
 float u_activity_min = 5.;
 float u_activity_max = 1.;
-float u_bob_amount = .1;
+float u_bob_amount = .0;
 
 const float PI = asin(1.0) * 2.;
 
@@ -255,12 +255,12 @@ Hit sd(vec3 p) {
   return ret;
 }
 
-float dot(vec2 p, float yee) {
+float dtot(vec2 p, float yee) {
   return pow(clamp(distance(p, vec2(0.))-0.5, 0., 1.), 2.);
 }
 
 vec3 fdot(vec2 p, float yee) {
-  float bri = dot(p.xy*10.-vec2(0,0.), yee);
+  float bri = dtot(p.xy*10.-vec2(0,0.), yee);
   return hsv(bri * 1., .1, 1.-bri);
 }
 

@@ -3,7 +3,7 @@
 uniform float sndGo;
 uniform sampler2D u_fb;
 uniform sampler2D webcam;
-#loadimage logo tender_alchemy.png
+#loadimage logo no_crypto.png
 
 struct Hit {
   float dist;

@@ -10,19 +10,21 @@ return {
 
     // "/shaders/s4y/fade50.s4r",
 
+    // "/shaders/s4y/sky.s4r",
 
+    // "/shaders/s4y/ocean.frag",
     // "shaders/s4y/order_5.s4r",
     // "/shaders/s4y/the_matrix.s4r",
+    // "/shaders/s4y/fade50.s4r",
+    // "/shaders/s4y/fade50.s4r",
+    // "/shaders/deadmau5/mau53d.frag",
     //
     // "/shaders/s4y/sffancy.s4r",
-    // "/shaders/s4y/edges.frag",
-    "/shaders/s4y/ocean.frag",
-    // "/shaders/s4y/black_hole.s4r",
+    // "/shaders/util/grid_move.s4r",
+    // "/shaders/s4y/ocean.frag",
     // "/shaders/s4y/embrighten.s4r",
     // "/shaders/s4y/black_hole.s4r",
-    // "/shaders/s4y/3d_stars.s4r",
 
-    // "/shaders/s4y/beat_glitch.s4r",
     // "/shaders/s4y/blobbyjamz.s4r",
     // "/shaders/s4y/chonkify.s4r",
     // "/shaders/s4y/cubetunel.frag",
@@ -30,45 +32,55 @@ return {
     // "/shaders/s4y/frax.s4r",
     // "/shaders/s4y/glass_filt.frag",
     // "/shaders/s4y/kaleid.s4r",
-    // "/shaders/s4y/make_red.s4r",
     // "/shaders/s4y/matriculate.s4r",
-    // "/shaders/s4y/mau5.frag",
     // "/shaders/s4y/mayglitch.s4r",
-    // "/shaders/util/grid_move.s4r",
     // "/shaders/s4y/morningfternoon.s4r",
     // "/shaders/s4y/make_white.s4r",
-    // "/shaders/s4y/mountain.s4r",
     // "/shaders/s4y/ocean.frag",
+    // "/shaders/s4y/yet_another_cube.s4r",
     // "/shaders/s4y/rectTun.s4r",
+    // "shaders/s4y/flower.s4r",
     // "shaders/s4y/dosome.s4r",
     // "/shaders/s4y/tangents.s4r",
-    // "/shaders/s4y/scan_line.s4r",
+    // "/shaders/s4y/matriculate.s4r",
+    // "/shaders/deadmau5/mau53d.frag",
+    // j"/shaders/s4y/kaleid.s4r",
     // "/shaders/s4y/wonderflow.s4r",
-    // "/shaders/s4y/yet_another_cube.s4r",
     // "/shaders/s4y/circlefade.s4r",
 
     // "shaders/s4y/soup.s4r",
-    "/shaders/s4y/ice.frag",
     // "/shaders/s4y/fade50.s4r",
-    // "shaders/s4y/flower.s4r",
-    // "shaders/s4y/nature.s4r",
+    // "/shaders/s4y/angel_mike_3d.s4r",
+    // "/shaders/s4y/halo.s4r",
+    "/shaders/s4y/sponge.frag",
+    // "/shaders/s4y/pulsediamond.s4r",
     // "/shaders/s4y/sffancy.s4r",
     // "/shaders/util/beat_clock.s4r",
-    // "/shaders/util/beat_shake.s4r",
     // "/shaders/util/editor.s4r",
     // "/shaders/util/grid_move.s4r",
     // "shaders/s4y/livecodenyc.s4r",
-    // "/shaders/s4y/rkaleid.s4r",
     //"shaders/s4y/fade50.s4r",
+
+    // "/shaders/s4y/black_hole.s4r",
+    // "/shaders/s4y/celluar.s4r",
+    // "/shaders/s4y/make_red.s4r",
+    // "/shaders/s4y/streamulate.s4r",
+    // "/shaders/s4y/mengerice.frag",
+    // "/shaders/s4y/edges.frag",
+    // "shaders/s4y/nature.s4r",
+
+    // "/shaders/s4y/mountain.s4r",
+    // "/shaders/s4y/scan_line.s4r",
 
     // "/shaders/s4y/light.s4r",
 
-    // "/shaders/s4y/celluar.s4r",
-    //     "/shaders/s4y/streamulate.s4r",
-    // "/shaders/s4y/crtify.s4r",
-
-
     // "/shaders/s4y/testpilot.frag",
+    // "/shaders/s4y/crtify.s4r",
+    // "/shaders/s4y/3d_stars.s4r",
+
+    // "/shaders/s4y/beat_glitch.s4r",
+    // "/shaders/util/beat_shake.s4r",
+
     // "/shaders/s4y/glass_filt.frag",
     // "/shaders/s4y/fade50.s4r",
     // "/shaders/s4y/fade50.s4r",
@@ -185,7 +197,7 @@ return {
     },
 
 
-    "/shaders/s4y/embrighten.s4r",
+    // "/shaders/s4y/embrighten.s4r",
 
   ],
 };

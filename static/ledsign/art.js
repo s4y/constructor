@@ -1,7 +1,14 @@
-if (id != null) {
+if (id == 0) {
+  xx *= -1;
+  x = w - x;
+  yy *= -1;
+  y = h - y;
+}
+
+if (true) {
   w *= 2;
   xx /= 2;
-  if (!id) {
+  if (id) {
     x += w;
     xx -= 0.5;
   } else {
@@ -40,12 +47,12 @@ const balmod = (x, by) => smod(x+by/2, by) - by/2;
 // xx += t * 0.4;
 // xx = ((xx+1) % 2) - 1;
 
-// bri += Math.pow(Math.max(0, Math.sqrt(xx * xx + yy * yy / aspect) - 0.5 + 0.5 * Math.pow(ssf(0.05), 10)), 20) > dither;
+// bri += Math.pow(Math.max(0, Math.sqrt(xx * xx + yy * yy / aspect) - 0.5 + 0.5 * Math.pow(sf(0.1), 2)), 10) > dither;
 
 // yy += Math.sin(xx * 20 + t * 2) * 0.0;// * Math.pow(ssf(Math.abs(xx) / 5) * 0.9, 10.);
 
 // xx = ((((xx/2+.5)+Math.cos(yy*10+t*1)*0.1)%1)*2-1);
-// xx = ((((xx/2+.5)+Math.cos(yy*10+t*0.5)*0.5*Math.pow(sf(0.1), 10))%1)*2-1);
+// xx = ((((xx/2+.5)+Math.cos(yy*10+t*0.5)*1.5*Math.pow(sf(0.1), 10))%1)*2-1);
 
 // xx += sf(yy/2+.5)*0.1;
 
@@ -54,7 +61,7 @@ const balmod = (x, by) => smod(x+by/2, by) - by/2;
 // yy += ssf((xx+t)%1/2)*2;
 // bri += (yy + (Math.sin(xx * 10 + t * 4) + ssf(0.1) * Math.sin(xx * 21 + t * 4) + Math.sin(xx * 54 + t * 4)) * 0.7 < -0.0);
 
-const mul = Math.sin(t*0.1)/2+.5;// - ssf(0.4) * 0.7;
+const mul = 1;//Math.sin(t*0.1)/2+.5;// - ssf(0.4) * 0.7;
 // bri += smile(balmod(xx*aspect*2*mul + t * 1, 10), yy *mul* 2 + 0.2) ? 1 : 0;
 
 // bri += (Math.abs(y-3) < 0.2);
@@ -62,15 +69,15 @@ const mul = Math.sin(t*0.1)/2+.5;// - ssf(0.4) * 0.7;
 // bri += Math.max(0, Math.pow(Math.sin((xx * 1.1 + t * 0.00) * (yy * 0.11 * aspect + t * 0.0) * aspect / 5 + t * 2), 2.));
 // return bri > 0.9;
 
-// bri += Math.pow(sf(Math.abs(xx)) - 0.0, 1) * h - 2 > Math.abs(y-3);
+// bri += Math.pow(sf(Math.abs(xx)) - 0.0, 6) * h - 2 > Math.abs(y-3);
 
 // return beatAmt < 0.5;
-// bri += Math.pow(sf(Math.abs(xx)) - 0.05, 4) * h - 2 > Math.abs(y-3);
+bri += Math.pow(sf(Math.abs(xx)) - 0.05, 5) * h - 2 > Math.abs(y-3);
 
 // bri += smoothstep(1.0, -1.5, Math.sqrt(xx * xx + yy * yy / aspect / aspect) / Math.pow(1-(beat * 1 % 1), 10) - 1.7);
-xx += -sipow(Math.sin(((beat/2+0.1)%1) * Math.PI * 2), 4);
+xx += -sipow(Math.sin(((beat/4+0.1)%1) * Math.PI * 2), 4);
 yy /= aspect;
-// bri += smoothstep(0.4, 0, Math.sqrt(xx * xx + yy * yy));
+// bri += smoothstep(0.4, 0, Math.sqrt(xx * xx + yy * yy)) * 0.1;
 // bri += Math.max(0, -0.1 + Math.pow(1-beatAmt, 10));
 
 

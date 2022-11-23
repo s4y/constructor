@@ -307,6 +307,8 @@ float sdMengerSponge(vec3 p, vec3 b) {
   d = -min(-d, sdCross(p * 3., b.xy) / 3.);
   d = -min(-d, sdCross((mod(p * 3. + b, b * 2.) - b) / 3., b.xy / 9.));
   d = -min(-d, sdCross((mod(p * 9. + b, b * 2.) - b) / 9., b.xy / 27.));
+  d = -min(-d, sdCross((mod(p * 27. + b, b * 2.) - b) / 27., b.xy / 81.));
+  d = -min(-d, sdCross((mod(p * 81. + b, b * 2.) - b) / 81., b.xy / 243.));
   // d = -min(d, sdCross(mod(p + b, b * 2.) - b, b.xy / 9.));
   return d;
 }

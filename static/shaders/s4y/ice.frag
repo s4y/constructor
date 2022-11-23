@@ -1,7 +1,7 @@
 #include "./common.glsl"
 
-uniform sampler2D last;
-uniform float last_aspect;
+uniform sampler2D filt;
+uniform float filt_aspect;
 
 const int kSteps = 100;
 const float kEpsilon = 1./1024.;
@@ -87,7 +87,7 @@ vec4 bg(vec3 p) {
   // p.x /= aspect / last_aspect;
   // p.x /= last_aspect;
   // return vec4(p, 1.);
-  return vec4(texture(last, p.xy/2.+.5).rgb, 1.);
+  return vec4(texture(filt, p.xy/2.+.5).rgb, 1.);
   // return vec4(pow(texture(last, p.xy/2.+.5).rgb * 0.5, vec3(1.)), 1.);
 }
 

@@ -1,3 +1,4 @@
+#version 300 es
 precision highp float;
 
 uniform sampler2D u_freq;
@@ -17,11 +18,11 @@ float uRotate = 0.;
 vec2 uOffset = vec2(0.5,0.5);
 
 float sf(float at) {
-  return texture2D(u_freq, vec2(at, 0))[0];
+  return texture(u_freq, vec2(at, 0))[0];
 }
 
 float ssf(float at) {
-  return texture2D(u_smooth_freq, vec2(at, 0))[0];
+  return texture(u_smooth_freq, vec2(at, 0))[0];
 }
 
 
@@ -100,7 +101,7 @@ void main()
     TDOutputInfo uTDOutputInfo = TDOutputInfo(u_resolution);
 
     vec2 p = p3.xy;
-    vec2 uv = vec2(gl_FragCoord.xy/u_resolution);//vUV.st - .5;
+    vec2 uv = vec2(fragColor.xy/u_resolution);//vUV.st - .5;
     vec2 glob_uv = vec2(.0);
     vec2 id = vec2(.0);
     float aspect = uTDOutputInfo.res.x / uTDOutputInfo.res.y;

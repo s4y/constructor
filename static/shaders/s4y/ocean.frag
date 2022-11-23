@@ -6,7 +6,8 @@ uniform float u_rot_x;
 uniform float u_rot_y;
 uniform float u_rot_z;
 uniform float u_head_glow;
-float u_sea_hue = 0.65;
+#define u_sea_hue gHue
+// float u_sea_hue = gHue
 float u_sea_hue_amt = 0.2;
 uniform float u_mouth_decoration;
 uniform float u_mouth_decoration_style;
@@ -183,7 +184,9 @@ SeaHit sdSea(vec3 p) {
       * rotY(p.z * 0.1)
       , p);
 
-  float t = t * .0 + sndGo * 10.;
+  p.y *= 1. - ssf(mod(p.z * .01, 1.));
+
+  float t = go * 1. + sndGo * 1.;
   // t = mod(pow(abs(beat / 4.), 2.), 1.);
 
   p *= 2.;

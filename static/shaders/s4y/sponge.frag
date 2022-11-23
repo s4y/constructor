@@ -10,7 +10,7 @@ uniform float last_aspect;
 uniform sampler2D filt;
 
 const int kSteps = 80;
-const float kEpsilon = 1./4096.;
+const float kEpsilon = 8./4096.;
 
 uniform float sndGo;
 uniform float midiBeat;
@@ -20,6 +20,17 @@ const int level = 0;
 
 mat4 inv_proj_mat;
 float aspect;
+
+float sdAltMengerSponge(vec3 p, vec3 b) {
+  float d = sdBox(p, b);
+  d = -min(-d, sdCross(p * 3., b.xy) / 3.);
+  d = -min(-d, sdCross((mod(p * 3. + b, b * 2.) - b) / 3., b.xy / 9.));
+  // d = -min(-d, sdCross((mod(p * 9. + b, b * 2.) - b) / 9., b.xy / 27.));
+  d = -min(-d, sdCross((mod(p * 27. + b, b * 2.) - b) / 27., b.xy / 30.));
+  // d = -min(-d, sdCross((mod(p * 81. + b, b * 2.) - b) / 81., b.xy / 81.));
+  // d = min(d, sdCross(mod(p + b, b * 2.) - b, b.xy / 243.*2.));
+  return d;
+}
 
 struct Hit {
   float dist;
@@ -39,12 +50,19 @@ Hit sd(vec3 p) {
   // p = mod(p + 0.3, .6) - 0.3;
   // p = transform(rotZ(0. * t * PI * 2. / 2. + PI/4.) * rotY(0.0 * sin(t*PI*2. / 32.)), p);
   // p = transform(rotZ(sin(t * PI * 2. / 2.) * -0.1 - PI / 4.), p);
-  p = transform(rotZ(p.z * 1.0 * sin(t * .1)), p);
+  // p = transform(rotZ(p.z * 1.0 * sin(t * .1)), p);
+  p = transform(rotX(p.x * 1.0 * sin(t * .1)), p);
+  p.y += pow(p.z, 1.2);
   // p.xy += 0.25;
   // p.y += 0.4;
   // p.z += t * -2.8;
 
-  p = transform(rotY(sin(t*0.2)) * rotX(sin(t*PI*2. / 32. * 0.1)), p);
+  p.z = sin(p.z*PI*2.) * 1.0 + 0.;
+
+  p = transform(rotY((t*0.2)) * rotX(sin(t*PI*2. / 32. * 0.1)), p);
+
+  p.z += sin(p.x * p.y * 10. + t) * 0.3 * pow(sf(mod(p.x, 1.)), 5.);
+  p.z += sin(p.x * p.y * 80. + 20. + t) * 0.3 * pow(sf(0.5), 5.);
 
   vec3 moodP = p;//transform(rotY(0.3)*rotZ(0.3), p);
   // if (abs(moodP.x)<0.05&&abs(moodP.z)<0.05)
@@ -58,7 +76,7 @@ Hit sd(vec3 p) {
   // if (op.z < 1.)
   //   p = mod(p+.25, .5)-.25;
   // p = transform(rotY((t * (120./60.) * PI * 2. * 0.1 + sndGo * 0.1)), p);
-  // p = transform(rotY((t * (120./60.) * PI * 2.) * sin((p.y-mod(p.y+0.1/12., .1/6.))*1.) / (op.z+-1.)), p);
+  // p = transform(rotY((t * (120./60.) * 0.01 * PI * 2.) * sin((p.y-mod(p.y+0.1/12., .1/6.))*1.) / (op.z+-1.)), p);
   // p = transform(rotY(p.z * 0.01 + t * 0.001), p);
   // p.z += pow(sf(mod(p.y/1.+.5, 1.)), 1.) * 0.5;
   // p.z += 1.;
@@ -68,9 +86,10 @@ Hit sd(vec3 p) {
   float dist;
 
 
-  dist = sdMengerSponge(p, vec3(0.6));
+  // dist = sdAltMengerSponge(p, vec3(0.4));
+  dist = sdSphere(p, 0.5);
 
-  dist = mix(dist, sdSphere(p, 0.6), 0.15);
+  // dist = mix(dist, sdSphere(p, 0.6), 0.15 - pow(sf(mod(p.z * p.x / 10., 1.)), 10.));
 
   // p.xy += .25;
   // if (op.z < 2.0) {
@@ -97,7 +116,7 @@ Hit sd(vec3 p) {
   // dist = sdSphere(p, .17 * (1.-0.0*pow(sf(p.x/100.), 4.))) * -1.;
   // dist = mix(dist, sdMengerSponge(p + vec3(sin(p.z + p.x * 1.1)*10., 0, 0), vec3(1.))*1., 0.0);
   // dist = sdBox(p, vec3(0.07));
-  return Hit(dist/4., p);
+  return Hit(dist/4.0, p);
 }
 
 // http://jamie-wong.com/2016/07/15/ray-marching-signed-distance-functions/
@@ -118,9 +137,9 @@ vec4 bg(vec3 p) {
   // return texture(remoteCam, p.xy * 10./2.+vec2(0.25, 0.5));
 
   // p.z += pow(ssf(1.-mod(p.z*1., 1.)), 2.);
-  return hsv(mod(p.z*10., 1.)*0.1, .0, pow(sf(mod(p.z+p.x, 1.)), 1.));
+  // return hsv(mod(p.z*10., 1.)*0.1, .0, pow(sf(mod(p.z+p.x, 1.)), 1.));
   // return addHsv(vec4(texture(remoteCam, p.xy * 10./2.+.5).rgb, 1.), vec3(p.x+sndGo, 0., 0.));
-  // return vec4(pow(texture(last, p.xy/2.+.5).rgb * 0.5, vec3(1.)), 1.);
+  return vec4(pow(texture(last, p.xy/2.+.5).rgb * 0.5, vec3(1.)), 1.);
 }
 
 vec4 march(vec3 p) {
@@ -144,13 +163,14 @@ vec4 march(vec3 p) {
       enterDist = dist;
       // dir += estimateNormal(transform(inv_proj_mat, p) + dir * dist) * 0.1;
       inside = true;
+      break;
     } else if (-surfaceDist < kEpsilon && inside) {
       inside = false;
       // light += hsv(dist * 0.1, 0., 1.) * (dist - enterDist);
       break;
     }
-    // if (dist > 1e2)
-    //   discard;
+    if (dist > 1e2)
+      discard;
   }
   if (inside) {
     thiccness = 1.;
@@ -159,25 +179,25 @@ vec4 march(vec3 p) {
   vec3 hitP = transform(inv_proj_mat, p) + dir * dist;
   vec3 norm = estimateNormal(hitP);
 
-  light += hsv(1./3., 0.2, 1.) * pow(clamp(dot(normalize(vec3(-1,0.5,2)), norm), 0., 1.), 1.);
-  light += hsv(hitP.z * 0.4 + 0.2, 1., 1.) * pow(clamp(dot(normalize(vec3(1,1,-1)), norm) + 0.1, 0., 1.), 1.);
-  light.a = 1.;
+  light += hsv(0./3. + hit.p.z * 0.2, 0.0, 1.) * smoothstep(0.0, 1.0, clamp(dot(normalize(vec3(-1,1.0,2)), norm), 0., 1.));
+  // light += hsv(hitP.z * 0.4 + 0.2, 1., 1.) * smoothstep(0.0, 1.0, pow(clamp(dot(normalize(vec3(1,1,-1)), norm) + 0.1, 0.05, 1.), 1.));
   // vec4 light = vec4(abs(norm), 1.) * smoothstep(0., 2., dist - enterDist);
-  // light = pow(light, vec4(5.));
-  // light = bg(transform(inverse(inv_proj_mat), hitP)) * (1.-light.a) + light;
+  light = pow(light, vec4(5.));
+  // light = bg(transform(inverse(inv_proj_mat), hitP)) * (1.-light.a);
   // light = mulHsv(bg(norm + hitP), vec3(1,0.5,0.9)) * (1.-light.a) + light;
-  // hitP *= length(fwidth(hitP));
-  // light *= smoothstep(kEpsilon*20., kEpsilon, surfaceDist);
-  light *= smoothstep(10., 0., dist);
+  hitP *= length(fwidth(hitP));
+  light *= smoothstep(kEpsilon*20., kEpsilon * 1.0, surfaceDist);
+  // light *= smoothstep(10., 1., dist);
   // light += bg(p) * (1.-light.a);
   // light -= vec4(length(fwidth(hitP)));
   return light;
-  vec3 lightHsv = rgb2hsv(light.rgb);
-  // lightHsv[2] = 1.-lightHsv[2];
-  return vec4(hsv2rgb(lightHsv), 1.);
+  // vec3 lightHsv = rgb2hsv(light.rgb);
+  // lightHsv[1] = 1.-lightHsv[1];
+  // return vec4(hsv2rgb(lightHsv), 1.);
 
-  // vec2 texp = vec2(atan(hitP.z, hitP.x)/(PI*2.)+0.75, hitP.y/PI/10.+0.5);
-  // light += vec4(texture(last, texp).xyz, 1.) * (1.-light.a);
+  vec2 texp = vec2(atan(hitP.z, hitP.x)/(PI*2.)+0.75, hitP.y/PI/10.+0.5);
+  light = vec4(texture(last, texp).xyz, 1.) * (light.a);
+  // return light;
   return mix(light, bg(norm), smoothstep(kEpsilon, kEpsilon * 2., enterDist));
 }
 

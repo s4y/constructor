@@ -1,5 +1,5 @@
-p .x 1 / unbal fsf 6 pow
-p .y 3 * abs step inv
+p .x 1 / unbal sf 6 pow
+p .y 1 * unbal 4 * step inv
 # p .y unbal 4 * step inv
 vec4.1
 draw

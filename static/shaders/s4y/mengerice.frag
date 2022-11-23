@@ -29,7 +29,7 @@ Hit sd(vec3 p) {
   // p = transform(rotZ(p.z  * 1.), p);
   // p = transform(rotX(p.z * 0.6), p);
   p.z += 0.6;
-  p = transform(rotX(sin(t * 1.8 * p.y * 0.01) * 0.9) * rotY(0.9 * sin(t * 0.7 + 0. * (beat * PI * 2. / 16.))), p);
+  p = transform(rotX(sin(t * 0.8 * p.y * 0.01) * 0.0) * rotY(0.3 * sin(t * 0.0 + 1. * (beat * PI * 2. / 8.))), p);
   // p = transform(rotY(PI/2.) * rotX(t * 0.0 + p.z), p);
   vec3 op = p;
   p.x = mod(p.x + 1./8., 1./4.) - 1./8.;
@@ -66,7 +66,7 @@ Hit sd(vec3 p) {
 
   // float dist = mix(sdCross(p, vec2(0.1, 0.1 * sf(sin(p.y / 5.)/2.+0.5))), sdSphere(p, 0.3), 0.1);
   // float dist = mix(sdSphere(p, 0.25/2.), sdBox(p, vec3(0.2, 0.1, 0.1)), .1 + pow(sf(mod(abs(op.x) / 20. - t * .1, .5)), 20.) * 0.1 + 0.7 * sin(op.x * 10. + t * 0.1));
-  float dist = sdBox(p, vec3(0.1, vec2(0.1 * pow(sf(abs(p.x / 10.)), 2.))));
+  float dist = sdBox(p, vec3(0.1, vec2(0.05 * pow(fsf(abs(p.x / 10.)), 6.))));
   return Hit(dist/2., p);
 }
 

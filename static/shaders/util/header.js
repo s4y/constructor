@@ -216,7 +216,7 @@ return () => {
     ctx.params.thump = 1;
   ctx.params.lo = newLo;
 
-  ctx.params.sndVel.value = ctx.params.sndVel * 0.98 + 0.05 * Math.pow(ctx.params.lo, 10);
+  ctx.params.sndVel.value = ctx.params.sndVel * 0.9 + 0.9 * Math.pow(ctx.params.lo, 10);
   ctx.params.sndGo += ctx.params.sndVel * 0.01;
 
   ctx.params.gRotX += velX.value * 0.05;

@@ -23,9 +23,9 @@
 l 2 * c 2 * r + + floor =num
 
 p .y -1 step =which
-# p .x abs fsf dup 0.9 step inv swap 0 1 vec4 which *
-p .x unbal 100 dims .x / mod 5 dims .x / step
-rule 4 * floor 27 + 2 num pow / 2 mod 1 step inv vec4.1 which inv * +
+p .x abs fsf dup 0.9 step inv swap 0 1 vec4 which *
+# p .x unbal 100 dims .x / mod 5 dims .x / step
+rule 4 * floor 19 + 2 num pow / 2 mod 1 step inv vec4.1 which inv * +
 
 
 
